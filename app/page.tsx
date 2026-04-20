@@ -1,0 +1,403 @@
+"use client";
+
+import { useEffect, useMemo, useState } from "react";
+import { supabase } from "@/lib/supabase";
+
+type ShoppingItem = {
+  id: number;
+  name: string;
+  category: string;
+  note: string;
+  checked: boolean;
+  created_at?: string;
+};
+
+const candidateItems = [
+  { name: "たまご", category: "卵", note: "Lサイズ 1パック" },
+  { name: "牛乳", category: "乳製品", note: "無調整 1本" },
+  { name: "玉ねぎ", category: "野菜", note: "大きめ 2個" },
+];
+
+const categories = ["野菜", "肉", "乳製品", "卵", "その他"];
+
+export default function Home() {
+  const [shoppingItems, setShoppingItems] = useState<ShoppingItem[]>([]);
+  const [search, setSearch] = useState("");
+  const [selectedCategory, setSelectedCategory] = useState("その他");
+
+  const [editingId, setEditingId] = useState<number | null>(null);
+  const [editName, setEditName] = useState("");
+  const [editCategory, setEditCategory] = useState("その他");
+  const [editNote, setEditNote] = useState("");
+
+  useEffect(() => {
+    fetchItems();
+  }, []);
+
+  const fetchItems = async () => {
+    const { data, error } = await supabase
+      .from("shopping_items")
+      .select("*")
+      .order("checked", { ascending: true })
+      .order("created_at", { ascending: false });
+
+    if (error) {
+      console.error("取得エラー:", error);
+      alert(`読み込みに失敗しました: ${error.message}`);
+      return;
+    }
+
+    setShoppingItems(data || []);
+  };
+
+  const filteredItems = candidateItems.filter(
+    (item) => item.name.includes(search) || search === ""
+  );
+
+  const groupedItems = useMemo(() => {
+    return categories.map((category) => ({
+      category,
+      items: shoppingItems.filter((item) => item.category === category),
+    }));
+  }, [shoppingItems]);
+
+  const addItem = async (item: Omit<ShoppingItem, "id" | "checked">) => {
+    const trimmedName = item.name.trim();
+
+    if (!trimmedName) return;
+
+    const alreadyExists = shoppingItems.some(
+      (shoppingItem) =>
+        shoppingItem.name === trimmedName && !shoppingItem.checked
+    );
+
+    if (alreadyExists) {
+      alert(`${trimmedName} はすでに追加されています`);
+      return;
+    }
+
+    const { error } = await supabase.from("shopping_items").insert([
+      {
+        name: trimmedName,
+        category: item.category,
+        note: item.note,
+        checked: false,
+      },
+    ]);
+
+    if (error) {
+      console.error("追加エラー:", error);
+      alert(`保存に失敗しました: ${error.message}`);
+      return;
+    }
+
+    await fetchItems();
+    setSearch("");
+    setSelectedCategory("その他");
+  };
+
+  const toggleItem = async (id: number, currentChecked: boolean) => {
+    const { error } = await supabase
+      .from("shopping_items")
+      .update({ checked: !currentChecked })
+      .eq("id", id);
+
+    if (error) {
+      console.error("チェック更新エラー:", error);
+      alert(`チェック更新に失敗しました: ${error.message}`);
+      return;
+    }
+
+    await fetchItems();
+  };
+
+  const deleteItem = async (id: number) => {
+    const { error } = await supabase
+      .from("shopping_items")
+      .delete()
+      .eq("id", id);
+
+    if (error) {
+      console.error("削除エラー:", error);
+      alert(`削除に失敗しました: ${error.message}`);
+      return;
+    }
+
+    await fetchItems();
+  };
+
+  const startEdit = (item: ShoppingItem) => {
+    setEditingId(item.id);
+    setEditName(item.name);
+    setEditCategory(item.category);
+    setEditNote(item.note);
+  };
+
+  const cancelEdit = () => {
+    setEditingId(null);
+    setEditName("");
+    setEditCategory("その他");
+    setEditNote("");
+  };
+
+  const saveEdit = async () => {
+    if (editingId === null) return;
+
+    const trimmedName = editName.trim();
+
+    if (!trimmedName) {
+      alert("食材名を入れてね");
+      return;
+    }
+
+    const { error } = await supabase
+      .from("shopping_items")
+      .update({
+        name: trimmedName,
+        category: editCategory,
+        note: editNote,
+      })
+      .eq("id", editingId);
+
+    if (error) {
+      console.error("編集エラー:", error);
+      alert(`編集に失敗しました: ${error.message}`);
+      return;
+    }
+
+    await fetchItems();
+    cancelEdit();
+  };
+
+const deleteCheckedItems = async () => {
+  const checkedItems = shoppingItems.filter((item) => item.checked);
+
+  if (checkedItems.length === 0) {
+    alert("チェック済みの項目がありません");
+    return;
+  }
+
+  const confirmed = confirm("チェック済みの項目をまとめて削除する？");
+
+  if (!confirmed) return;
+
+  const checkedIds = checkedItems.map((item) => item.id);
+
+  const { error } = await supabase
+    .from("shopping_items")
+    .delete()
+    .in("id", checkedIds);
+
+  if (error) {
+    console.error("一括削除エラー:", error);
+    alert(`一括削除に失敗しました: ${error.message}`);
+    return;
+  }
+
+  await fetchItems();
+};
+
+  return (
+    <main className="min-h-screen bg-neutral-50 px-4 py-8">
+      <div className="mx-auto max-w-xl">
+        <header className="mb-6">
+          <p className="text-sm text-neutral-500">My Shopping List</p>
+          <h1 className="text-3xl font-bold text-neutral-900">買い物リスト</h1>
+          <p className="mt-2 text-sm text-neutral-600">
+            候補を押すとリストに追加できるテスト版
+          </p>
+        </header>
+
+        <div className="mb-4 flex justify-end">
+  <button
+    onClick={deleteCheckedItems}
+    className="rounded-xl bg-red-500 px-4 py-2 text-sm text-white"
+  >
+    チェック済みを削除
+  </button>
+</div>
+
+        <section className="mb-6 rounded-2xl bg-white p-4 shadow-sm ring-1 ring-neutral-200">
+          <label className="mb-2 block text-sm font-medium text-neutral-700">
+            食材を検索
+          </label>
+
+          <div className="flex gap-2">
+            <input
+              type="text"
+              placeholder="たまご、牛乳…"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" && search.trim() !== "") {
+                  addItem({
+                    name: search,
+                    category: selectedCategory,
+                    note: "",
+                  });
+                }
+              }}
+              className="flex-1 rounded-xl border border-neutral-300 px-4 py-3 text-sm outline-none focus:border-neutral-500"
+            />
+
+            <button
+  type="button"
+  onClick={() => {
+    if (!search.trim()) return;
+
+    addItem({
+      name: search,
+      category: selectedCategory,
+      note: "",
+    });
+  }}
+  className="rounded-xl bg-blue-500 px-4 py-3 text-sm text-white"
+>
+  追加
+</button>
+          </div>
+
+          <select
+            value={selectedCategory}
+            onChange={(e) => setSelectedCategory(e.target.value)}
+            className="mt-2 w-full rounded-xl border border-neutral-300 px-4 py-2 text-sm"
+          >
+            {categories.map((cat) => (
+              <option key={cat} value={cat}>
+                {cat}
+              </option>
+            ))}
+          </select>
+
+          <div className="mt-3 flex flex-wrap gap-2">
+            {filteredItems.map((item) => (
+              <button
+                key={item.name}
+                type="button"
+                onClick={() => addItem(item)}
+                className="rounded-full bg-neutral-100 px-3 py-1 text-sm text-neutral-700 transition hover:bg-neutral-200"
+              >
+                {item.name === "たまご" && "🥚 "}
+                {item.name === "牛乳" && "🥛 "}
+                {item.name === "玉ねぎ" && "🧅 "}
+                {item.name}
+              </button>
+            ))}
+          </div>
+        </section>
+
+        <section className="space-y-4">
+          {groupedItems.map(({ category, items }) => (
+            <div
+              key={category}
+              className="rounded-2xl bg-white p-4 shadow-sm ring-1 ring-neutral-200"
+            >
+              <h2 className="mb-3 text-lg font-semibold text-neutral-800">
+                {category}
+              </h2>
+
+              {items.length === 0 ? (
+                <p className="text-sm text-neutral-400">まだありません</p>
+              ) : (
+                <div className="space-y-3">
+                  {items.map((item) => (
+                    <div
+                      key={item.id}
+                      className="flex items-start gap-3 rounded-xl border border-neutral-100 p-3"
+                    >
+                      {editingId === item.id ? (
+                        <div className="flex w-full flex-col gap-2 sm:flex-row sm:items-start">
+                          <input
+                            value={editName}
+                            onChange={(e) => setEditName(e.target.value)}
+                            className="flex-1 rounded-lg border border-neutral-300 px-3 py-2 text-sm"
+                            placeholder="食材名"
+                          />
+
+                          <select
+                            value={editCategory}
+                            onChange={(e) => setEditCategory(e.target.value)}
+                            className="rounded-lg border border-neutral-300 px-3 py-2 text-sm"
+                          >
+                            {categories.map((cat) => (
+                              <option key={cat} value={cat}>
+                                {cat}
+                              </option>
+                            ))}
+                          </select>
+
+                          <input
+                            value={editNote}
+                            onChange={(e) => setEditNote(e.target.value)}
+                            className="flex-1 rounded-lg border border-neutral-300 px-3 py-2 text-sm"
+                            placeholder="メモ"
+                          />
+
+                          <button
+                            onClick={saveEdit}
+                            className="rounded-lg bg-blue-500 px-3 py-2 text-sm text-white"
+                          >
+                            保存
+                          </button>
+
+                          <button
+                            onClick={cancelEdit}
+                            className="rounded-lg bg-neutral-200 px-3 py-2 text-sm text-neutral-700"
+                          >
+                            キャンセル
+                          </button>
+                        </div>
+                      ) : (
+                        <>
+                          <input
+                            type="checkbox"
+                            checked={item.checked}
+                            onChange={() => toggleItem(item.id, item.checked)}
+                            className="mt-1 h-4 w-4"
+                          />
+
+                          <div className="flex-1">
+                            <p
+                              className={`font-medium ${
+                                item.checked
+                                  ? "text-neutral-400 line-through opacity-60"
+                                  : "text-neutral-900"
+                              }`}
+                            >
+                              {item.name}
+                            </p>
+                            <p className="text-sm text-neutral-500">
+                              {item.note}
+                            </p>
+                          </div>
+
+                          <button
+                            onClick={() => startEdit(item)}
+                            className="text-sm text-blue-500"
+                          >
+                            編集
+                          </button>
+
+                          <button
+                            onClick={() => {
+                              if (confirm("削除していい？")) {
+                                deleteItem(item.id);
+                              }
+                            }}
+                            className="ml-2 text-sm text-red-500"
+                          >
+                            削除
+                          </button>
+                        </>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          ))}
+        </section>
+      </div>
+    </main>
+  );
+}
