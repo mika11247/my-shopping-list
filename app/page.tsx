@@ -202,7 +202,7 @@ const deleteCheckedItems = async () => {
       <div className="mx-auto max-w-xl">
         <header className="mb-6">
           <p className="text-sm text-neutral-500">My Shopping List</p>
-          <h1 className="text-3xl font-bold text-neutral-900">買い物リスト</h1>
+          <h1 className="text-3xl font-bold text-neutral-900">お買い物リスト</h1>
           <p className="mt-2 text-sm text-neutral-600">
             候補を押すとリストに追加できるテスト版
           </p>
