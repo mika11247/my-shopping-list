@@ -18,7 +18,20 @@ const candidateItems = [
   { name: "玉ねぎ", category: "野菜", note: "大きめ 2個" },
 ];
 
-const categories = ["野菜", "肉", "乳製品", "卵", "その他"];
+const categories = [
+  "野菜・果物",
+  "肉",
+  "魚",
+  "乳製品",
+  "卵",
+  "冷凍",
+  "パン・穀物",
+  "調味料",
+  "飲み物",
+  "お菓子",
+  "日用品",
+  "その他"
+];
 
 export default function Home() {
   const [shoppingItems, setShoppingItems] = useState<ShoppingItem[]>([]);
