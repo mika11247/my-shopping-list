@@ -207,7 +207,7 @@ export default function Home() {
     const trimmedName = editName.trim();
 
     if (!trimmedName) {
-      alert("食材名を入れてね");
+      alert("アイテム名を入れてね");
       return;
     }
 
@@ -265,8 +265,9 @@ const deleteCheckedItems = async () => {
           <p className="text-sm text-neutral-500">My Shopping List</p>
           <h1 className="text-3xl font-bold text-neutral-900">お買い物リスト</h1>
           <p className="mt-2 text-sm text-neutral-600">
-            候補を押すとリストに追加できるテスト版
-          </p>
+  よく使うアイテムを検索して、かんたんに追加できます
+  <span className="ml-1 text-xs text-neutral-400">（β版）</span>
+</p>
         </header>
 
         <div className="mb-4 flex justify-end">
@@ -280,7 +281,7 @@ const deleteCheckedItems = async () => {
 
         <section className="mb-6 rounded-2xl bg-white p-4 shadow-sm ring-1 ring-neutral-200">
           <label className="mb-2 block text-sm font-medium text-neutral-700">
-            食材を検索
+            アイテムを検索
           </label>
 
           <div className="flex gap-2">
@@ -330,21 +331,44 @@ const deleteCheckedItems = async () => {
             ))}
           </select>
 
-          <div className="mt-3 flex flex-wrap gap-2">
-            {filteredItems.map((item) => (
-              <button
-                key={item.name}
-                type="button"
-                onClick={() => addItem(item)}
-                className="rounded-full bg-neutral-100 px-3 py-1 text-sm text-neutral-700 transition hover:bg-neutral-200"
-              >
-                {item.name === "たまご" && "🥚 "}
-                {item.name === "牛乳" && "🥛 "}
-                {item.name === "玉ねぎ" && "🧅 "}
-                {item.name}
-              </button>
-            ))}
-          </div>
+          {search.trim() !== "" && (
+  <div className="mt-3">
+    {filteredItems.length > 0 ? (
+      <div className="flex flex-wrap gap-2">
+        {filteredItems.map((item) => (
+          <button
+            key={item.name}
+            type="button"
+            onClick={() => addItem(item)}
+            className="rounded-full bg-neutral-100 px-3 py-1 text-sm text-neutral-700 transition hover:bg-neutral-200"
+          >
+            {item.name}
+          </button>
+        ))}
+      </div>
+    ) : (
+      <div className="rounded-xl bg-neutral-50 p-3 ring-1 ring-neutral-200">
+        <p className="text-sm text-neutral-500">
+          該当するアイテムがありません
+        </p>
+
+        <button
+          type="button"
+          onClick={() =>
+            addItem({
+              name: search,
+              category: selectedCategory,
+              note: "",
+            })
+          }
+          className="mt-2 rounded-lg bg-blue-500 px-3 py-2 text-sm text-white"
+        >
+          「{search}」を追加する
+        </button>
+      </div>
+    )}
+  </div>
+)}
         </section>
 
         <section className="space-y-4">
