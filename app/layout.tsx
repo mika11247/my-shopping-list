@@ -16,6 +16,7 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "買い物リスト",
   description: "よく使うアイテムを検索して、かんたんに追加できます",
+  manifest: "/manifest.json",
 };
 
 export default function RootLayout({
