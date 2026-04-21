@@ -14,9 +14,9 @@ type ShoppingItem = {
 
 type CandidateItem = {
   name: string;
-  yomi: string;
-  category: string;
-  note: string;
+  yomi?: string;
+  category?: string;
+  note?: string;
 };
 
 const categories = [
@@ -33,6 +33,12 @@ const categories = [
   "日用品",
   "その他"
 ];
+
+const toHiragana = (text: string) => {
+  return text.replace(/[\u30a1-\u30f6]/g, (char) =>
+    String.fromCharCode(char.charCodeAt(0) - 0x60)
+  );
+};
 
 export default function Home() {
   const [shoppingItems, setShoppingItems] = useState<ShoppingItem[]>([]);
@@ -51,21 +57,59 @@ export default function Home() {
 }, []);
 
   const fetchCandidateItems = async () => {
-  const { data, error } = await supabase
-    .from("item_master")
-    .select("name, yomi, category, note")
-    .order("id", { ascending: true });
+  const [
+    { data: defaultData, error: defaultError },
+    { data: userData, error: userError },
+  ] = await Promise.all([
+    supabase
+      .from("item_master")
+      .select("name, yomi, category, note")
+      .order("id", { ascending: true }),
 
-  console.log("candidate data:", data);
-  console.log("candidate error:", error);
+    supabase
+      .from("user_item_master")
+      .select("name")
+      .order("id", { ascending: false }),
+  ]);
 
-  if (error) {
-    console.error("候補取得エラー:", error);
-    alert(`候補の読み込みに失敗しました: ${error.message}`);
+  console.log("default candidate data:", defaultData);
+  console.log("user candidate data:", userData);
+  console.log("default candidate error:", defaultError);
+  console.log("user candidate error:", userError);
+
+  if (defaultError || userError) {
+    console.error("候補取得エラー:", defaultError || userError);
+    alert(
+      `候補の読み込みに失敗しました: ${
+        defaultError?.message || userError?.message
+      }`
+    );
     return;
   }
 
-  setCandidateItems(data || []);
+  const defaultCandidates: CandidateItem[] = (defaultData || []).map((item) => ({
+    name: item.name,
+    yomi: item.yomi ?? "",
+    category: item.category ?? "その他",
+    note: item.note ?? "",
+  }));
+
+  const userCandidates: CandidateItem[] = (userData || []).map((item) => ({
+    name: item.name,
+    yomi: "",
+    category: "その他",
+    note: "",
+  }));
+
+  const merged = [...userCandidates, ...defaultCandidates];
+
+  const uniqueCandidates = Array.from(
+    new Map(
+      merged.map((item) => [item.name.trim().toLowerCase(), item])
+    ).values()
+  );
+
+  setCandidateItems(uniqueCandidates);
 };
 
   const fetchItems = async () => {
@@ -84,12 +128,17 @@ export default function Home() {
     setShoppingItems(data || []);
   };
 
-   const filteredItems = candidateItems.filter(
-  (item) =>
-    item.name.includes(search) ||
-    item.yomi.includes(search) ||
+   const filteredItems = candidateItems.filter((item) => {
+  const normalizedSearch = toHiragana(search);
+  const normalizedName = toHiragana(item.name);
+  const normalizedYomi = toHiragana(item.yomi ?? "");
+
+  return (
+    normalizedName.includes(normalizedSearch) ||
+    normalizedYomi.includes(normalizedSearch) ||
     search === ""
-);
+  );
+});
 
   const groupedItems = useMemo(() => {
     return categories.map((category) => ({
@@ -128,9 +177,21 @@ export default function Home() {
       return;
     }
 
+await supabase.from("user_item_master").upsert(
+  [
+    {
+      name: trimmedName,
+    },
+  ],
+  {
+    onConflict: "name",
+  }
+);
+
     await fetchItems();
-    setSearch("");
-    setSelectedCategory("その他");
+await fetchCandidateItems();
+setSearch("");
+setSelectedCategory("その他");
   };
 
   const toggleItem = async (id: number, currentChecked: boolean) => {
@@ -315,7 +376,13 @@ const deleteCheckedItems = async () => {
           <button
             key={item.name}
             type="button"
-            onClick={() => addItem(item)}
+            onClick={() =>
+  addItem({
+    name: item.name,
+    category: item.category ?? "その他",
+    note: item.note ?? "",
+  })
+}
             className="rounded-full bg-neutral-100 px-3 py-1 text-sm text-neutral-700 transition hover:bg-neutral-200"
           >
             {item.name}
