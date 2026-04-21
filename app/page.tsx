@@ -12,10 +12,55 @@ type ShoppingItem = {
   created_at?: string;
 };
 
-const candidateItems = [
-  { name: "たまご", category: "卵", note: "Lサイズ 1パック" },
-  { name: "牛乳", category: "乳製品", note: "無調整 1本" },
-  { name: "玉ねぎ", category: "野菜", note: "大きめ 2個" },
+type CandidateItem = {
+  name: string;
+  yomi: string;
+  category: string;
+  note: string;
+};
+
+const candidateItems: CandidateItem[] = [
+  { name: "玉ねぎ", yomi: "たまねぎ", category: "野菜・果物", note: "" },
+  { name: "にんじん", yomi: "にんじん", category: "野菜・果物", note: "" },
+  { name: "じゃがいも", yomi: "じゃがいも", category: "野菜・果物", note: "" },
+  { name: "キャベツ", yomi: "きゃべつ", category: "野菜・果物", note: "" },
+  { name: "トマト", yomi: "とまと", category: "野菜・果物", note: "" },
+  { name: "しめじ", yomi: "しめじ", category: "野菜・果物", note: "" },
+  { name: "しいたけ", yomi: "しいたけ", category: "野菜・果物", note: "" },
+
+  { name: "鶏もも", yomi: "とりもも", category: "肉", note: "" },
+  { name: "鶏むね", yomi: "とりむね", category: "肉", note: "" },
+  { name: "豚こま", yomi: "ぶたこま", category: "肉", note: "" },
+  { name: "牛こま", yomi: "ぎゅうこま", category: "肉", note: "" },
+
+  { name: "鮭", yomi: "さけ", category: "魚", note: "" },
+  { name: "シーフードミックス", yomi: "しーふーどみっくす", category: "冷凍", note: "" },
+
+  { name: "牛乳", yomi: "ぎゅうにゅう", category: "乳製品", note: "" },
+  { name: "ヨーグルト", yomi: "よーぐると", category: "乳製品", note: "" },
+  { name: "プリン", yomi: "ぷりん", category: "乳製品", note: "" },
+  { name: "チーズ", yomi: "ちーず", category: "乳製品", note: "" },
+
+  { name: "ゼリー", yomi: "ぜりー", category: "お菓子", note: "" },
+
+  { name: "卵", yomi: "たまご", category: "卵", note: "" },
+
+  { name: "豆腐", yomi: "とうふ", category: "その他", note: "" },
+  { name: "納豆", yomi: "なっとう", category: "その他", note: "" },
+
+  { name: "食パン", yomi: "しょくぱん", category: "パン・穀物", note: "" },
+
+  { name: "醤油", yomi: "しょうゆ", category: "調味料", note: "" },
+  { name: "みりん", yomi: "みりん", category: "調味料", note: "" },
+  { name: "酒", yomi: "さけ", category: "調味料", note: "" },
+  { name: "お酢", yomi: "おす", category: "調味料", note: "" },
+
+  { name: "オレンジジュース", yomi: "おれんじじゅーす", category: "飲み物", note: "" },
+
+  { name: "ティッシュ", yomi: "てぃっしゅ", category: "日用品", note: "" },
+  { name: "トイレットペーパー", yomi: "といれっとぺーぱー", category: "日用品", note: "" },
+
+  { name: "冷凍唐揚げ", yomi: "れいとうからあげ", category: "冷凍", note: "" },
 ];
 
 const categories = [
@@ -63,9 +108,12 @@ export default function Home() {
     setShoppingItems(data || []);
   };
 
-  const filteredItems = candidateItems.filter(
-    (item) => item.name.includes(search) || search === ""
-  );
+   const filteredItems = candidateItems.filter(
+  (item) =>
+    item.name.includes(search) ||
+    item.yomi.includes(search) ||
+    search === ""
+);
 
   const groupedItems = useMemo(() => {
     return categories.map((category) => ({
