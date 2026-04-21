@@ -17,6 +17,15 @@ export const metadata: Metadata = {
   title: "買い物リスト",
   description: "よく使うアイテムを検索して、かんたんに追加できます",
   manifest: "/manifest.json",
+  appleWebApp: {
+    capable: true,
+    title: "買い物リスト",
+    statusBarStyle: "default",
+  },
+  icons: {
+    icon: "/favicon.png",
+    apple: "/apple-touch-icon.png",
+  },
 };
 
 export default function RootLayout({
