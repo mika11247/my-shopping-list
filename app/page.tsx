@@ -19,50 +19,6 @@ type CandidateItem = {
   note: string;
 };
 
-const candidateItems: CandidateItem[] = [
-  { name: "玉ねぎ", yomi: "たまねぎ", category: "野菜・果物", note: "" },
-  { name: "にんじん", yomi: "にんじん", category: "野菜・果物", note: "" },
-  { name: "じゃがいも", yomi: "じゃがいも", category: "野菜・果物", note: "" },
-  { name: "キャベツ", yomi: "きゃべつ", category: "野菜・果物", note: "" },
-  { name: "トマト", yomi: "とまと", category: "野菜・果物", note: "" },
-  { name: "しめじ", yomi: "しめじ", category: "野菜・果物", note: "" },
-  { name: "しいたけ", yomi: "しいたけ", category: "野菜・果物", note: "" },
-
-  { name: "鶏もも", yomi: "とりもも", category: "肉", note: "" },
-  { name: "鶏むね", yomi: "とりむね", category: "肉", note: "" },
-  { name: "豚こま", yomi: "ぶたこま", category: "肉", note: "" },
-  { name: "牛こま", yomi: "ぎゅうこま", category: "肉", note: "" },
-
-  { name: "鮭", yomi: "さけ", category: "魚", note: "" },
-  { name: "シーフードミックス", yomi: "しーふーどみっくす", category: "冷凍", note: "" },
-
-  { name: "牛乳", yomi: "ぎゅうにゅう", category: "乳製品", note: "" },
-  { name: "ヨーグルト", yomi: "よーぐると", category: "乳製品", note: "" },
-  { name: "プリン", yomi: "ぷりん", category: "乳製品", note: "" },
-  { name: "チーズ", yomi: "ちーず", category: "乳製品", note: "" },
-
-  { name: "ゼリー", yomi: "ぜりー", category: "お菓子", note: "" },
-
-  { name: "卵", yomi: "たまご", category: "卵", note: "" },
-
-  { name: "豆腐", yomi: "とうふ", category: "その他", note: "" },
-  { name: "納豆", yomi: "なっとう", category: "その他", note: "" },
-
-  { name: "食パン", yomi: "しょくぱん", category: "パン・穀物", note: "" },
-
-  { name: "醤油", yomi: "しょうゆ", category: "調味料", note: "" },
-  { name: "みりん", yomi: "みりん", category: "調味料", note: "" },
-  { name: "酒", yomi: "さけ", category: "調味料", note: "" },
-  { name: "お酢", yomi: "おす", category: "調味料", note: "" },
-
-  { name: "オレンジジュース", yomi: "おれんじじゅーす", category: "飲み物", note: "" },
-
-  { name: "ティッシュ", yomi: "てぃっしゅ", category: "日用品", note: "" },
-  { name: "トイレットペーパー", yomi: "といれっとぺーぱー", category: "日用品", note: "" },
-
-  { name: "冷凍唐揚げ", yomi: "れいとうからあげ", category: "冷凍", note: "" },
-];
-
 const categories = [
   "野菜・果物",
   "肉",
@@ -80,6 +36,7 @@ const categories = [
 
 export default function Home() {
   const [shoppingItems, setShoppingItems] = useState<ShoppingItem[]>([]);
+  const [candidateItems, setCandidateItems] = useState<CandidateItem[]>([]);
   const [search, setSearch] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("その他");
 
@@ -89,8 +46,27 @@ export default function Home() {
   const [editNote, setEditNote] = useState("");
 
   useEffect(() => {
-    fetchItems();
-  }, []);
+  fetchItems();
+  fetchCandidateItems();
+}, []);
+
+  const fetchCandidateItems = async () => {
+  const { data, error } = await supabase
+    .from("item_master")
+    .select("name, yomi, category, note")
+    .order("id", { ascending: true });
+
+  console.log("candidate data:", data);
+  console.log("candidate error:", error);
+
+  if (error) {
+    console.error("候補取得エラー:", error);
+    alert(`候補の読み込みに失敗しました: ${error.message}`);
+    return;
+  }
+
+  setCandidateItems(data || []);
+};
 
   const fetchItems = async () => {
     const { data, error } = await supabase
