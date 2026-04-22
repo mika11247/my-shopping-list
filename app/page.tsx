@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/lib/supabase";
+import { useRouter } from "next/navigation";
 
 type ShoppingItem = {
   id: number;
@@ -41,6 +42,7 @@ const toHiragana = (text: string) => {
 };
 
 export default function Home() {
+  const router = useRouter();
   const [shoppingItems, setShoppingItems] = useState<ShoppingItem[]>([]);
   const [candidateItems, setCandidateItems] = useState<CandidateItem[]>([]);
   const [search, setSearch] = useState("");
@@ -51,9 +53,28 @@ export default function Home() {
   const [editCategory, setEditCategory] = useState("その他");
   const [editNote, setEditNote] = useState("");
 
+  const handleLogout = async () => {
+  await supabase.auth.signOut();
+  window.location.href = "/login";
+};
+
   useEffect(() => {
   fetchItems();
   fetchCandidateItems();
+}, []);
+
+useEffect(() => {
+  const checkUser = async () => {
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+
+    if (!user) {
+      router.push("/login");
+    }
+  };
+
+  checkUser();
 }, []);
 
   const fetchCandidateItems = async () => {
@@ -298,14 +319,23 @@ const deleteCheckedItems = async () => {
   return (
     <main className="min-h-screen bg-neutral-50 px-4 py-8">
       <div className="mx-auto max-w-xl">
-        <header className="mb-6">
-          <p className="text-sm text-neutral-500">My Shopping List</p>
-          <h1 className="text-3xl font-bold text-neutral-900">お買い物リスト</h1>
-          <p className="mt-2 text-sm text-neutral-600">
-  よく使うアイテムを検索して、かんたんに追加できます
-  <span className="ml-1 text-xs text-neutral-400">（β版）</span>
-</p>
-        </header>
+        <header className="mb-6 flex justify-between items-start">
+  <div>
+    <p className="text-sm text-neutral-500">My Shopping List</p>
+    <h1 className="text-3xl font-bold text-neutral-900">お買い物リスト</h1>
+    <p className="mt-2 text-sm text-neutral-600">
+      よく使うアイテムを検索して、かんたんに追加できます
+      <span className="ml-1 text-xs text-neutral-400">（β版）</span>
+    </p>
+  </div>
+
+  <button
+    onClick={handleLogout}
+    className="rounded-xl bg-neutral-200 px-3 py-2 text-sm text-neutral-700"
+  >
+    ログアウト
+  </button>
+</header>
 
         <div className="mb-4 flex justify-end">
   <button
