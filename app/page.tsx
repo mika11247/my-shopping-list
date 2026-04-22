@@ -43,6 +43,7 @@ const toHiragana = (text: string) => {
 
 export default function Home() {
   const router = useRouter();
+  const [userId, setUserId] = useState<string | null>(null);
   const [shoppingItems, setShoppingItems] = useState<ShoppingItem[]>([]);
   const [candidateItems, setCandidateItems] = useState<CandidateItem[]>([]);
   const [search, setSearch] = useState("");
@@ -58,10 +59,12 @@ export default function Home() {
   window.location.href = "/login";
 };
 
-  useEffect(() => {
+useEffect(() => {
+  if (!userId) return;
+
   fetchItems();
   fetchCandidateItems();
-}, []);
+}, [userId]);
 
 useEffect(() => {
   const checkUser = async () => {
@@ -71,13 +74,18 @@ useEffect(() => {
 
     if (!user) {
       router.push("/login");
+      return;
     }
+
+    setUserId(user.id);
   };
 
   checkUser();
-}, []);
+}, [router]);
 
-  const fetchCandidateItems = async () => {
+ const fetchCandidateItems = async () => {
+  if (!userId) return;
+
   const [
     { data: defaultData, error: defaultError },
     { data: userData, error: userError },
@@ -90,6 +98,7 @@ useEffect(() => {
     supabase
       .from("user_item_master")
       .select("name")
+      .eq("user_id", userId)
       .order("id", { ascending: false }),
   ]);
 
@@ -134,20 +143,23 @@ useEffect(() => {
 };
 
   const fetchItems = async () => {
-    const { data, error } = await supabase
-      .from("shopping_items")
-      .select("*")
-      .order("checked", { ascending: true })
-      .order("created_at", { ascending: false });
+  if (!userId) return;
 
-    if (error) {
-      console.error("取得エラー:", error);
-      alert(`読み込みに失敗しました: ${error.message}`);
-      return;
-    }
+  const { data, error } = await supabase
+    .from("shopping_items")
+    .select("*")
+    .eq("user_id", userId) 
+    .order("checked", { ascending: true })
+    .order("created_at", { ascending: false });
 
-    setShoppingItems(data || []);
-  };
+  if (error) {
+    console.error("取得エラー:", error);
+    alert(`読み込みに失敗しました: ${error.message}`);
+    return;
+  }
+
+  setShoppingItems(data || []);
+};
 
    const filteredItems = candidateItems.filter((item) => {
   const normalizedSearch = toHiragana(search);
@@ -169,51 +181,63 @@ useEffect(() => {
   }, [shoppingItems]);
 
   const addItem = async (item: Omit<ShoppingItem, "id" | "checked">) => {
-    const trimmedName = item.name.trim();
+  if (!userId) {
+    alert("ログイン情報を取得できませんでした");
+    return;
+  }
 
-    if (!trimmedName) return;
+  const trimmedName = item.name.trim();
+  if (!trimmedName) return;
 
-    const alreadyExists = shoppingItems.some(
-      (shoppingItem) =>
-        shoppingItem.name === trimmedName && !shoppingItem.checked
+  const alreadyExists = shoppingItems.some(
+    (shoppingItem) =>
+      shoppingItem.name === trimmedName && !shoppingItem.checked
+  );
+
+  if (alreadyExists) {
+    alert(`${trimmedName} はすでに追加されています`);
+    return;
+  }
+
+  const { error } = await supabase.from("shopping_items").insert([
+    {
+      user_id: userId,
+      name: trimmedName,
+      category: item.category,
+      note: item.note,
+      checked: false,
+    },
+  ]);
+
+  if (error) {
+    console.error("追加エラー:", error);
+    alert(`保存に失敗しました: ${error.message}`);
+    return;
+  }
+
+  const { error: masterError } = await supabase
+    .from("user_item_master")
+    .upsert(
+      [
+        {
+          user_id: userId,
+          name: trimmedName,
+        },
+      ],
+      {
+        onConflict: "user_id,name",
+      }
     );
 
-    if (alreadyExists) {
-      alert(`${trimmedName} はすでに追加されています`);
-      return;
-    }
-
-    const { error } = await supabase.from("shopping_items").insert([
-      {
-        name: trimmedName,
-        category: item.category,
-        note: item.note,
-        checked: false,
-      },
-    ]);
-
-    if (error) {
-      console.error("追加エラー:", error);
-      alert(`保存に失敗しました: ${error.message}`);
-      return;
-    }
-
-await supabase.from("user_item_master").upsert(
-  [
-    {
-      name: trimmedName,
-    },
-  ],
-  {
-    onConflict: "name",
+  if (masterError) {
+    console.error("user_item_masterエラー:", masterError);
   }
-);
 
-    await fetchItems();
-await fetchCandidateItems();
-setSearch("");
-setSelectedCategory("その他");
-  };
+  await fetchItems();
+  await fetchCandidateItems();
+  setSearch("");
+  setSelectedCategory("その他");
+};
 
   const toggleItem = async (id: number, currentChecked: boolean) => {
     const { error } = await supabase
