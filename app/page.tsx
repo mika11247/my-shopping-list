@@ -44,6 +44,7 @@ const toHiragana = (text: string) => {
 export default function Home() {
   const router = useRouter();
   const [userId, setUserId] = useState<string | null>(null);
+  const [userEmail, setUserEmail] = useState("");
   const [shoppingItems, setShoppingItems] = useState<ShoppingItem[]>([]);
   const [candidateItems, setCandidateItems] = useState<CandidateItem[]>([]);
   const [search, setSearch] = useState("");
@@ -78,6 +79,7 @@ useEffect(() => {
     }
 
     setUserId(user.id);
+    setUserEmail(user.email ?? "");
   };
 
   checkUser();
@@ -345,13 +347,18 @@ const deleteCheckedItems = async () => {
       <div className="mx-auto max-w-xl">
         <header className="mb-6 flex justify-between items-start">
   <div>
-    <p className="text-sm text-neutral-500">My Shopping List</p>
-    <h1 className="text-3xl font-bold text-neutral-900">お買い物リスト</h1>
-    <p className="mt-2 text-sm text-neutral-600">
-      よく使うアイテムを検索して、かんたんに追加できます
-      <span className="ml-1 text-xs text-neutral-400">（β版）</span>
-    </p>
-  </div>
+  <p className="text-sm text-neutral-500">My Shopping List</p>
+  <h1 className="text-3xl font-bold text-neutral-900">お買い物リスト</h1>
+  {userEmail && (
+  <p className="mt-1 text-xs text-neutral-500">
+    ログイン中：{userEmail.split("@")[0]}
+  </p>
+)}
+  <p className="mt-2 text-sm text-neutral-600">
+    よく使うアイテムを検索して、かんたんに追加できます
+    <span className="ml-1 text-xs text-neutral-400">（β版）</span>
+  </p>
+</div>
 
   <button
     onClick={handleLogout}
