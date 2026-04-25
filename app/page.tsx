@@ -198,25 +198,54 @@ useEffect(() => {
   );
 
   if (alreadyExists) {
-    alert(`${trimmedName} はすでに追加されています`);
+    alert("すでにリストにあります");
     return;
   }
 
-  const { error } = await supabase.from("shopping_items").insert([
+  let categoryToSave = item.category;
+
+  const { data: matchedMaster, error: masterLookupError } = await supabase
+    .from("item_master")
+    .select("category")
+    .eq("name", trimmedName)
+    .maybeSingle();
+
+  if (masterLookupError) {
+    console.error("item_master検索エラー:", masterLookupError);
+  }
+
+  if (matchedMaster?.category) {
+    categoryToSave = matchedMaster.category;
+  }
+
+  const { data, error } = await supabase
+  .from("shopping_items")
+  .insert([
     {
       user_id: userId,
       name: trimmedName,
-      category: item.category,
+      category: categoryToSave,
       note: item.note,
       checked: false,
     },
-  ]);
+  ])
+  .select()
+  .single();
 
-  if (error) {
-    console.error("追加エラー:", error);
-    alert(`保存に失敗しました: ${error.message}`);
-    return;
-  }
+if (error) {
+  console.error("追加エラー:", error);
+  alert(`保存に失敗しました: ${error.message}`);
+  return;
+}
+
+setShoppingItems((prev) =>
+  [...prev, data].sort((a, b) => {
+    if (a.checked !== b.checked) {
+      return Number(a.checked) - Number(b.checked);
+    }
+    return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+  })
+);
 
   const { error: masterError } = await supabase
     .from("user_item_master")
@@ -233,13 +262,10 @@ useEffect(() => {
     );
 
   if (masterError) {
-    console.error("user_item_masterエラー:", masterError);
+    console.error("マスタ保存エラー:", masterError);
   }
 
-  await fetchItems();
-  await fetchCandidateItems();
   setSearch("");
-  setSelectedCategory("その他");
 };
 
   const toggleItem = async (id: number, currentChecked: boolean) => {
