@@ -33,7 +33,8 @@ const categories = [
   "飲み物",
   "お菓子",
   "日用品",
-  "その他"
+  "その他",
+  "一時メモ"
 ];
 
 const toHiragana = (text: string) => {
@@ -183,7 +184,11 @@ useEffect(() => {
     }));
   }, [shoppingItems]);
 
-  const addItem = async (item: Omit<ShoppingItem, "id" | "checked">) => {
+  const addItem = async (
+  item: Omit<ShoppingItem, "id" | "checked"> & {
+    saveToMaster?: boolean;
+  }
+) => {
   if (!userId) {
     alert("ログイン情報を取得できませんでした");
     return;
@@ -247,6 +252,7 @@ setShoppingItems((prev) =>
   })
 );
 
+  if (item.saveToMaster !== false) {
   const { error: masterError } = await supabase
     .from("user_item_master")
     .upsert(
@@ -264,8 +270,9 @@ setShoppingItems((prev) =>
   if (masterError) {
     console.error("マスタ保存エラー:", masterError);
   }
+}
 
-  setSearch("");
+setSearch("");
 };
 
   const toggleItem = async (id: number, currentChecked: boolean) => {
@@ -410,39 +417,58 @@ const deleteCheckedItems = async () => {
           </label>
 
           <div className="flex gap-2">
-            <input
-              type="text"
-              placeholder="たまご、牛乳…"
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === "Enter" && search.trim() !== "") {
-                  addItem({
-                    name: search,
-                    category: selectedCategory,
-                    note: "",
-                  });
-                }
-              }}
-              className="flex-1 rounded-xl border border-neutral-300 px-4 py-3 text-sm outline-none focus:border-neutral-500"
-            />
+  <input
+    type="text"
+    placeholder="たまご、牛乳…"
+    value={search}
+    onChange={(e) => setSearch(e.target.value)}
+    onKeyDown={(e) => {
+      if (e.key === "Enter" && search.trim() !== "") {
+        addItem({
+          name: search,
+          category: selectedCategory,
+          note: "",
+          saveToMaster: true,
+        });
+      }
+    }}
+    className="flex-1 rounded-xl border border-neutral-300 px-4 py-3 text-sm outline-none focus:border-neutral-500"
+  />
 
-            <button
-  type="button"
-  onClick={() => {
-    if (!search.trim()) return;
+  <button
+    type="button"
+    onClick={() => {
+      if (!search.trim()) return;
 
-    addItem({
-      name: search,
-      category: selectedCategory,
-      note: "",
-    });
-  }}
-  className="rounded-xl bg-blue-500 px-4 py-3 text-sm text-white"
->
-  追加
-</button>
-          </div>
+      addItem({
+        name: search,
+        category: selectedCategory,
+        note: "",
+        saveToMaster: true,
+      });
+    }}
+    className="rounded-xl bg-blue-500 px-4 py-3 text-sm text-white"
+  >
+    追加
+  </button>
+
+  <button
+    type="button"
+    onClick={() => {
+      if (!search.trim()) return;
+
+      addItem({
+        name: search,
+        category: "一時メモ",
+        note: "",
+        saveToMaster: false,
+      });
+    }}
+    className="rounded-xl bg-neutral-500 px-4 py-3 text-sm text-white"
+  >
+    一時
+  </button>
+</div>
 
           <select
             value={selectedCategory}
@@ -469,6 +495,7 @@ const deleteCheckedItems = async () => {
     name: item.name,
     category: item.category ?? "その他",
     note: item.note ?? "",
+    saveToMaster: true,
   })
 }
             className="rounded-full bg-neutral-100 px-3 py-1 text-sm text-neutral-700 transition hover:bg-neutral-200"
@@ -484,18 +511,19 @@ const deleteCheckedItems = async () => {
         </p>
 
         <button
-          type="button"
-          onClick={() =>
-            addItem({
-              name: search,
-              category: selectedCategory,
-              note: "",
-            })
-          }
-          className="mt-2 rounded-lg bg-blue-500 px-3 py-2 text-sm text-white"
-        >
-          「{search}」を追加する
-        </button>
+  type="button"
+  onClick={() =>
+    addItem({
+      name: search,
+      category: "一時メモ",
+      note: "",
+      saveToMaster: false,
+    })
+  }
+  className="mt-2 rounded-lg bg-neutral-500 px-3 py-2 text-sm text-white"
+>
+  「{search}」を一時追加する
+</button>
       </div>
     )}
   </div>
