@@ -56,6 +56,7 @@ export default function Home() {
   const [editName, setEditName] = useState("");
   const [editCategory, setEditCategory] = useState("その他");
   const [editNote, setEditNote] = useState("");
+  const [userMasterItems, setUserMasterItems] = useState<CandidateItem[]>([]);
 
   const handleLogout = async () => {
   await supabase.auth.signOut();
@@ -67,6 +68,7 @@ useEffect(() => {
 
   fetchItems();
   fetchCandidateItems();
+  fetchUserMasterItems(); // ←追加🔥
 }, [userId]);
 
 useEffect(() => {
@@ -165,15 +167,48 @@ useEffect(() => {
   setShoppingItems(data || []);
 };
 
-   const filteredItems = candidateItems.filter((item) => {
+const fetchUserMasterItems = async () => {
+  if (!userId) return;
+
+  const { data, error } = await supabase
+    .from("user_item_master")
+    .select("name")
+    .eq("user_id", userId);
+
+  if (error) {
+    console.error("ユーザーマスター取得エラー:", error);
+    return;
+  }
+
+  const formatted: CandidateItem[] = (data || []).map((item) => ({
+  name: item.name,
+  yomi: item.name,
+  category: "その他",
+  note: "",
+}));
+
+  setUserMasterItems(formatted);
+};
+
+const allItems = [...candidateItems, ...userMasterItems];
+
+const uniqueItems = Array.from(
+  new Map(
+    [...candidateItems, ...userMasterItems].map((item) => [
+      item.name,
+      item,
+    ])
+  ).values()
+);
+
+const filteredItems = uniqueItems.filter((item) => {
   const normalizedSearch = toHiragana(search);
   const normalizedName = toHiragana(item.name);
   const normalizedYomi = toHiragana(item.yomi ?? "");
 
   return (
     normalizedName.includes(normalizedSearch) ||
-    normalizedYomi.includes(normalizedSearch) ||
-    search === ""
+    normalizedYomi.includes(normalizedSearch)
   );
 });
 
@@ -184,11 +219,14 @@ useEffect(() => {
     }));
   }, [shoppingItems]);
 
-  const addItem = async (
-  item: Omit<ShoppingItem, "id" | "checked"> & {
-    saveToMaster?: boolean;
-  }
-) => {
+  const addItem = async (item: {
+  name: string;
+  category: string;
+  note: string;
+  saveToMaster?: boolean;
+  isManual?: boolean; // ← 追加🔥
+}) => {
+  
   if (!userId) {
     alert("ログイン情報を取得できませんでした");
     return;
@@ -252,7 +290,15 @@ setShoppingItems((prev) =>
   })
 );
 
-  if (item.saveToMaster !== false) {
+  const existsInDefaultMaster = candidateItems.some(
+  (masterItem) => masterItem.name === trimmedName
+);
+
+if (
+  item.isManual &&
+  item.saveToMaster !== false &&
+  !existsInDefaultMaster
+) {
   const { error: masterError } = await supabase
     .from("user_item_master")
     .upsert(
@@ -377,17 +423,34 @@ const deleteCheckedItems = async () => {
 };
 
   return (
+    
     <main className="min-h-screen bg-neutral-50 px-4 py-8">
       <div className="mx-auto max-w-xl">
         <header className="mb-6 flex justify-between items-start">
   <div>
-  <p className="text-sm text-neutral-500">My Shopping List</p>
-  <h1 className="text-3xl font-bold text-neutral-900">お買い物リスト</h1>
-  {userEmail && (
-  <p className="mt-1 text-xs text-neutral-500">
-    ログイン中：{userEmail.split("@")[0]}
-  </p>
-)}
+  <div className="mb-4 flex items-start justify-between gap-4">
+  <div>
+    <p className="text-sm text-neutral-500">My Shopping List</p>
+
+    <h1 className="text-3xl font-bold text-neutral-900">
+      お買い物リスト
+    </h1>
+
+    {userEmail && (
+      <p className="mt-1 text-xs text-neutral-500">
+        ログイン中：{userEmail.split("@")[0]}
+      </p>
+    )}
+  </div>
+
+  <button
+    onClick={() => router.push("/master")}
+    className="mt-1 rounded-full bg-white px-3 py-1 text-sm text-blue-500 shadow-sm ring-1 ring-neutral-200"
+  >
+    My items
+  </button>
+</div>
+
   <p className="mt-2 text-sm text-neutral-600">
     よく使うアイテムを検索して、かんたんに追加できます
     <span className="ml-1 text-xs text-neutral-400">（β版）</span>
@@ -429,6 +492,7 @@ const deleteCheckedItems = async () => {
           category: selectedCategory,
           note: "",
           saveToMaster: true,
+          isManual: true,
         });
       }
     }}
@@ -445,6 +509,7 @@ const deleteCheckedItems = async () => {
         category: selectedCategory,
         note: "",
         saveToMaster: true,
+        isManual: true,
       });
     }}
     className="rounded-xl bg-blue-500 px-4 py-3 text-sm text-white"
@@ -462,6 +527,7 @@ const deleteCheckedItems = async () => {
         category: "一時メモ",
         note: "",
         saveToMaster: false,
+        isManual: false,
       });
     }}
     className="rounded-xl bg-neutral-500 px-4 py-3 text-sm text-white"
@@ -470,19 +536,19 @@ const deleteCheckedItems = async () => {
   </button>
 </div>
 
-          <select
-            value={selectedCategory}
-            onChange={(e) => setSelectedCategory(e.target.value)}
-            className="mt-2 w-full rounded-xl border border-neutral-300 px-4 py-2 text-sm"
-          >
-            {categories.map((cat) => (
-              <option key={cat} value={cat}>
-                {cat}
-              </option>
-            ))}
-          </select>
+<select
+  value={selectedCategory}
+  onChange={(e) => setSelectedCategory(e.target.value)}
+  className="mt-2 w-full rounded-xl border border-neutral-300 px-4 py-2 text-sm"
+>
+  {categories.map((cat) => (
+    <option key={cat} value={cat}>
+      {cat}
+    </option>
+  ))}
+</select>
 
-          {search.trim() !== "" && (
+{search.trim() !== "" && (
   <div className="mt-3">
     {filteredItems.length > 0 ? (
       <div className="flex flex-wrap gap-2">
@@ -491,13 +557,14 @@ const deleteCheckedItems = async () => {
             key={item.name}
             type="button"
             onClick={() =>
-  addItem({
-    name: item.name,
-    category: item.category ?? "その他",
-    note: item.note ?? "",
-    saveToMaster: true,
-  })
-}
+              addItem({
+                name: item.name,
+                category: item.category ?? "その他",
+                note: item.note ?? "",
+                saveToMaster: false,
+                isManual: false,
+              })
+            }
             className="rounded-full bg-neutral-100 px-3 py-1 text-sm text-neutral-700 transition hover:bg-neutral-200"
           >
             {item.name}
@@ -511,19 +578,20 @@ const deleteCheckedItems = async () => {
         </p>
 
         <button
-  type="button"
-  onClick={() =>
-    addItem({
-      name: search,
-      category: "一時メモ",
-      note: "",
-      saveToMaster: false,
-    })
-  }
-  className="mt-2 rounded-lg bg-neutral-500 px-3 py-2 text-sm text-white"
->
-  「{search}」を一時追加する
-</button>
+          type="button"
+          onClick={() =>
+            addItem({
+              name: search,
+              category: "一時メモ",
+              note: "",
+              saveToMaster: false,
+              isManual: false,
+            })
+          }
+          className="mt-2 rounded-lg bg-neutral-500 px-3 py-2 text-sm text-white"
+        >
+          「{search}」を一時追加する
+        </button>
       </div>
     )}
   </div>
