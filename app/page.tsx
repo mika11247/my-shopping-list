@@ -247,19 +247,35 @@ const filteredItems = uniqueItems.filter((item) => {
 
   let categoryToSave = item.category;
 
-  const { data: matchedMaster, error: masterLookupError } = await supabase
-    .from("item_master")
-    .select("category")
-    .eq("name", trimmedName)
-    .maybeSingle();
+// ① user_item_master を先に確認
+const { data: matchedUserMaster, error: userMasterLookupError } = await supabase
+  .from("user_item_master")
+  .select("category")
+  .eq("user_id", userId)
+  .eq("name", trimmedName)
+  .maybeSingle();
 
-  if (masterLookupError) {
-    console.error("item_master検索エラー:", masterLookupError);
-  }
+if (userMasterLookupError) {
+  console.error("user_item_master検索エラー:", userMasterLookupError);
+}
 
-  if (matchedMaster?.category) {
-    categoryToSave = matchedMaster.category;
-  }
+// ② item_master も確認
+const { data: matchedMaster, error: masterLookupError } = await supabase
+  .from("item_master")
+  .select("category")
+  .eq("name", trimmedName)
+  .maybeSingle();
+
+if (masterLookupError) {
+  console.error("item_master検索エラー:", masterLookupError);
+}
+
+// 優先順位：自分の候補 → デフォルト候補 → 選択中カテゴリ
+if (matchedUserMaster?.category) {
+  categoryToSave = matchedUserMaster.category;
+} else if (matchedMaster?.category) {
+  categoryToSave = matchedMaster.category;
+}
 
   const { data, error } = await supabase
   .from("shopping_items")
@@ -306,6 +322,7 @@ if (
         {
   user_id: userId,
   name: trimmedName,
+  yomi: toHiragana(trimmedName),
   category: categoryToSave,
 }
       ],
@@ -509,8 +526,8 @@ const deleteCheckedItems = async () => {
         name: search,
         category: selectedCategory,
         note: "",
-        saveToMaster: true,
-        isManual: true,
+        saveToMaster: false,
+        isManual: false,
       });
     }}
     className="rounded-xl bg-blue-500 px-4 py-3 text-sm text-white"
@@ -518,23 +535,6 @@ const deleteCheckedItems = async () => {
     追加
   </button>
 
-  <button
-    type="button"
-    onClick={() => {
-      if (!search.trim()) return;
-
-      addItem({
-        name: search,
-        category: "一時メモ",
-        note: "",
-        saveToMaster: false,
-        isManual: false,
-      });
-    }}
-    className="rounded-xl bg-neutral-500 px-4 py-3 text-sm text-white"
-  >
-    一時
-  </button>
 </div>
 
 <select
@@ -563,7 +563,7 @@ const deleteCheckedItems = async () => {
                 category: item.category ?? "その他",
                 note: item.note ?? "",
                 saveToMaster: false,
-                isManual: false,
+                isManual: true,
               })
             }
             className="rounded-full bg-neutral-100 px-3 py-1 text-sm text-neutral-700 transition hover:bg-neutral-200"
@@ -577,6 +577,22 @@ const deleteCheckedItems = async () => {
         <p className="text-sm text-neutral-500">
           該当するアイテムがありません
         </p>
+
+        <button
+  type="button"
+  onClick={() =>
+    addItem({
+      name: search,
+      category: selectedCategory,
+      note: "",
+      saveToMaster: true,
+      isManual: true,
+    })
+  }
+  className="mt-2 mr-2 rounded-lg bg-blue-500 px-3 py-2 text-sm text-white"
+>
+  「{search}」をMy itemsに追加
+</button>
 
         <button
           type="button"
