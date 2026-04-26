@@ -103,7 +103,7 @@ useEffect(() => {
 
     supabase
       .from("user_item_master")
-      .select("name")
+      .select("name, category")
       .eq("user_id", userId)
       .order("id", { ascending: false }),
   ]);
@@ -172,7 +172,7 @@ const fetchUserMasterItems = async () => {
 
   const { data, error } = await supabase
     .from("user_item_master")
-    .select("name")
+    .select("name, category")
     .eq("user_id", userId);
 
   if (error) {
@@ -183,7 +183,7 @@ const fetchUserMasterItems = async () => {
   const formatted: CandidateItem[] = (data || []).map((item) => ({
   name: item.name,
   yomi: item.name,
-  category: "その他",
+  category: item.category ?? "その他",
   note: "",
 }));
 
@@ -304,9 +304,10 @@ if (
     .upsert(
       [
         {
-          user_id: userId,
-          name: trimmedName,
-        },
+  user_id: userId,
+  name: trimmedName,
+  category: categoryToSave,
+}
       ],
       {
         onConflict: "user_id,name",
