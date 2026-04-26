@@ -72,6 +72,14 @@ useEffect(() => {
 }, [userId]);
 
 useEffect(() => {
+  if (!userId) return;
+
+  fetchItems();
+  fetchCandidateItems();
+  fetchUserMasterItems();
+}, [userId]);
+
+useEffect(() => {
   const checkUser = async () => {
     const {
       data: { user },
