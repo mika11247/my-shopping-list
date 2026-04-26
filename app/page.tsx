@@ -103,7 +103,7 @@ useEffect(() => {
 
     supabase
       .from("user_item_master")
-      .select("name, category")
+      .select("name, yomi, category")
       .eq("user_id", userId)
       .order("id", { ascending: false }),
   ]);
@@ -131,11 +131,11 @@ useEffect(() => {
   }));
 
   const userCandidates: CandidateItem[] = (userData || []).map((item) => ({
-    name: item.name,
-    yomi: "",
-    category: "その他",
-    note: "",
-  }));
+  name: item.name,
+  yomi: item.yomi ?? item.name,
+  category: item.category ?? "その他",
+  note: "",
+}));
 
   const merged = [...userCandidates, ...defaultCandidates];
 
@@ -201,7 +201,7 @@ const uniqueItems = Array.from(
   ).values()
 );
 
-const filteredItems = uniqueItems.filter((item) => {
+const filteredItems = candidateItems.filter((item) => {
   const normalizedSearch = toHiragana(search);
   const normalizedName = toHiragana(item.name);
   const normalizedYomi = toHiragana(item.yomi ?? "");
