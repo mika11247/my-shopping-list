@@ -591,23 +591,23 @@ await supabase
 
           <div className="flex gap-2">
   <input
-    type="text"
-    placeholder="たまご、牛乳…"
-    value={search}
-    onChange={(e) => setSearch(e.target.value)}
-    onKeyDown={(e) => {
-      if (e.key === "Enter" && search.trim() !== "") {
-        addItem({
-          name: search,
-          category: selectedCategory,
-          note: "",
-          saveToMaster: true,
-          isManual: true,
-        });
-      }
-    }}
-    className="flex-1 rounded-xl border border-neutral-300 px-4 py-3 text-base outline-none focus:border-neutral-500"
-  />
+  type="text"
+  placeholder="たまご、牛乳…"
+  value={search}
+  onChange={(e) => setSearch(e.target.value)}
+  onKeyDown={(e) => {
+    if (e.key === "Enter" && search.trim() !== "") {
+      addItem({
+        name: search,
+        category: selectedCategory,
+        note: "",
+        saveToMaster: true,
+        isManual: true,
+      });
+    }
+  }}
+  className="flex-1 rounded-xl border border-neutral-300 px-4 py-3 text-base text-gray-800 placeholder:text-gray-400 outline-none focus:border-neutral-500"
+/>
 
   <button
     type="button"
@@ -732,32 +732,32 @@ await supabase
 }`}
             >
               {editingId === item.id ? (
-                <div className="flex w-full flex-col gap-2 sm:flex-row sm:items-start">
-                  <input
-                    value={editName}
-                    onChange={(e) => setEditName(e.target.value)}
-                    className="flex-1 rounded-lg border border-neutral-300 px-3 py-2 text-base"
-                    placeholder="食材名"
-                  />
+  <div className="flex w-full flex-col gap-2 sm:flex-row sm:items-start">
+    <input
+      value={editName}
+      onChange={(e) => setEditName(e.target.value)}
+      className="flex-1 rounded-lg border border-neutral-300 px-3 py-2 text-base text-gray-800 placeholder:text-gray-400 outline-none focus:border-neutral-500 focus:ring-2 focus:ring-neutral-200"
+      placeholder="食材名"
+    />
 
-                  <select
-                    value={editCategory}
-                    onChange={(e) => setEditCategory(e.target.value)}
-                    className="flex-1 rounded-lg border border-neutral-300 px-3 py-2 text-base"
-                  >
-                    {categories.map((cat) => (
-                      <option key={cat} value={cat}>
-                        {cat}
-                      </option>
-                    ))}
-                  </select>
+    <select
+      value={editCategory}
+      onChange={(e) => setEditCategory(e.target.value)}
+      className="flex-1 rounded-lg border border-neutral-300 px-3 py-2 text-base text-gray-800 outline-none focus:border-neutral-500 focus:ring-2 focus:ring-neutral-200"
+    >
+      {categories.map((cat) => (
+        <option key={cat} value={cat}>
+          {cat}
+        </option>
+      ))}
+    </select>
 
-                  <input
-                    value={editNote}
-                    onChange={(e) => setEditNote(e.target.value)}
-                   className="flex-1 rounded-lg border border-neutral-300 px-3 py-2 text-base"
-                    placeholder="メモ"
-                  />
+    <input
+      value={editNote}
+      onChange={(e) => setEditNote(e.target.value)}
+      className="flex-1 rounded-lg border border-neutral-300 px-3 py-2 text-base text-gray-800 placeholder:text-gray-400 outline-none focus:border-neutral-500 focus:ring-2 focus:ring-neutral-200"
+      placeholder="メモ"
+    />
 
                   <button
                     onClick={saveEdit}

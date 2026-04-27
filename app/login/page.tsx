@@ -115,32 +115,32 @@ function LoginContent() {
 
         <form onSubmit={handleSubmit} className="mt-6 space-y-4">
           <div>
-            <label className="mb-2 block text-sm font-medium text-neutral-700">
-              メールアドレス
-            </label>
-            <input
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              className="w-full rounded-xl border border-neutral-300 px-4 py-3 text-base outline-none focus:border-neutral-500"
-              placeholder="example@mail.com"
-              required
-            />
-          </div>
+  <label className="mb-2 block text-sm font-medium text-neutral-700">
+    メールアドレス
+  </label>
+  <input
+    type="email"
+    value={email}
+    onChange={(e) => setEmail(e.target.value)}
+    className="w-full rounded-xl border border-neutral-300 px-4 py-3 text-base text-gray-800 placeholder:text-gray-400 outline-none focus:border-neutral-500"
+    placeholder="example@mail.com"
+    required
+  />
+</div>
 
-          <div>
-            <label className="mb-2 block text-sm font-medium text-neutral-700">
-              パスワード
-            </label>
-            <input
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              className="w-full rounded-xl border border-neutral-300 px-4 py-3 text-base outline-none focus:border-neutral-500"
-              placeholder="8文字以上がおすすめ"
-              required
-            />
-          </div>
+<div>
+  <label className="mb-2 block text-sm font-medium text-neutral-700">
+    パスワード
+  </label>
+  <input
+    type="password"
+    value={password}
+    onChange={(e) => setPassword(e.target.value)}
+    className="w-full rounded-xl border border-neutral-300 px-4 py-3 text-base text-gray-800 placeholder:text-gray-400 outline-none focus:border-neutral-500"
+    placeholder="8文字以上がおすすめ"
+    required
+  />
+</div>
 
           {message && (
             <p className="rounded-xl bg-neutral-50 px-4 py-3 text-sm text-neutral-600 ring-1 ring-neutral-200">

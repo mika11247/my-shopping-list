@@ -279,7 +279,7 @@ setNewCategory("その他");
   value={editYomi}
   onChange={(e) => setEditYomi(e.target.value)}
   placeholder="よみ（ひらがな・空欄OK）"
-  className="rounded-xl border border-pink-200 bg-white px-3 py-1 text-sm text-gray-800"
+  className="rounded-xl border border-pink-200 bg-white px-3 py-1 text-base text-gray-800"
 />
 
                     <select
