@@ -725,7 +725,11 @@ await supabase
           {items.map((item) => (
             <div
               key={item.id}
-              className="flex items-center justify-between rounded-xl border border-neutral-100 p-3"
+              className={`flex items-center justify-between rounded-xl border p-3 transition ${
+  item.checked
+    ? "border-gray-200 bg-gray-100"
+    : "border-neutral-100 bg-white"
+}`}
             >
               {editingId === item.id ? (
                 <div className="flex w-full flex-col gap-2 sm:flex-row sm:items-start">
@@ -779,9 +783,13 @@ await supabase
                       className="h-4 w-4"
                     />
 
-                    <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-lime-50 text-xl">
-                      {item.image_url ?? "🛒"}
-                    </div>
+                    <div
+  className={`flex h-10 w-10 items-center justify-center rounded-xl text-xl ${
+    item.checked ? "bg-gray-100 opacity-50" : "bg-lime-50"
+  }`}
+>
+  {item.image_url ?? "🛒"}
+</div>
 
                     <div>
                       <p
