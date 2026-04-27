@@ -421,6 +421,11 @@ setSearch("");
   };
 
 const deleteCheckedItems = async () => {
+  if (!userId) {
+    alert("ログイン情報がありません");
+    return;
+  }
+
   const checkedItems = shoppingItems.filter((item) => item.checked);
 
   if (checkedItems.length === 0) {
@@ -429,23 +434,54 @@ const deleteCheckedItems = async () => {
   }
 
   const confirmed = confirm("チェック済みの項目をまとめて削除する？");
-
   if (!confirmed) return;
+
+  const historyData = checkedItems.map((item) => ({
+    user_id: userId,
+    name: item.name,
+    category: item.category,
+    note: item.note ?? "",
+    checked: item.checked,
+  }));
+
+  const { data, error: insertError } = await supabase
+    .from("deleted_items")
+    .insert(historyData)
+    .select();
+
+  console.log("履歴保存データ:", historyData);
+console.log("履歴保存結果:", data);
+
+if (insertError) {
+  console.error("履歴保存エラー:", insertError);
+  alert(`履歴の保存に失敗しました: ${insertError.message}`);
+  return;
+}
 
   const checkedIds = checkedItems.map((item) => item.id);
 
-  const { error } = await supabase
+  const { error: deleteError } = await supabase
     .from("shopping_items")
     .delete()
     .in("id", checkedIds);
 
-  if (error) {
-    console.error("一括削除エラー:", error);
-    alert(`一括削除に失敗しました: ${error.message}`);
-    return;
-  }
+  if (deleteError) {
+  console.error("一括削除エラー:", deleteError);
+  alert(`一括削除に失敗しました: ${deleteError.message}`);
+  return;
+}
 
-  await fetchItems();
+await fetchItems();
+
+// 🔥古い履歴削除（自分のだけ）
+await supabase
+  .from("deleted_items")
+  .delete()
+  .eq("user_id", userId)
+  .lt(
+    "deleted_at",
+    new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString()
+  );
 };
 
   return (
@@ -476,6 +512,13 @@ const deleteCheckedItems = async () => {
     My items
   </button>
 </div>
+
+<button
+  onClick={() => router.push("/history")}
+  className="rounded-full bg-white px-3 py-1 text-xs text-gray-600 shadow ring-1 ring-pink-100"
+>
+  履歴
+</button>
 
   <p className="mt-2 text-sm text-neutral-600">
     よく使うアイテムを検索して、かんたんに追加できます
