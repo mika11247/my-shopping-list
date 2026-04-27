@@ -12,6 +12,15 @@ export default function SignupPage() {
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState("");
 
+  const handleGoogleLogin = async () => {
+  await supabase.auth.signInWithOAuth({
+    provider: "google",
+    options: {
+      redirectTo: `${window.location.origin}/`,
+    },
+  });
+};
+
   const handleSignup = async (e: FormEvent) => {
     e.preventDefault();
     setLoading(true);
@@ -82,6 +91,14 @@ export default function SignupPage() {
               {message}
             </p>
           )}
+
+          <button
+  type="button"
+  onClick={handleGoogleLogin}
+  className="w-full rounded-xl bg-white px-4 py-3 text-sm font-bold text-neutral-700 shadow-sm ring-1 ring-neutral-200"
+>
+  Googleで登録
+</button>
 
           <button
             type="submit"
