@@ -144,7 +144,7 @@ export default function LoginPage() {
 
 <button
   type="button"
-  onClick={sendPasswordResetEmail}
+  onClick={() => router.push("/forgot-password")}
   className="mt-3 text-xs font-bold text-lime-700 underline"
 >
   パスワードを忘れた方はこちら
