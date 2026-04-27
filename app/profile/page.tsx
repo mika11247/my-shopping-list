@@ -160,7 +160,8 @@ export default function ProfilePage() {
   }
 
   await supabase.auth.signOut();
-  router.push("/login");
+
+router.push("/login?withdraw=1");
 };
 
   useEffect(() => {

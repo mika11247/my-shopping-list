@@ -3,6 +3,7 @@
 import { FormEvent, useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase";
 import { useRouter } from "next/navigation";
+import { useSearchParams } from "next/navigation";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -12,6 +13,8 @@ export default function LoginPage() {
   const [mode, setMode] = useState<"login" | "signup">("login");
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState("");
+  const searchParams = useSearchParams();
+const isWithdraw = searchParams.get("withdraw");
 
   const sendPasswordResetEmail = async () => {
   if (!email) {
@@ -94,6 +97,12 @@ export default function LoginPage() {
         <p className="mt-2 text-sm text-neutral-600">
           夫婦で同じアカウントを使うなら、共通のメールアドレスとパスワードでOK
         </p>
+
+        {isWithdraw && (
+  <div className="mb-4 rounded-2xl bg-green-50 px-4 py-3 text-sm font-bold text-green-600 ring-1 ring-green-200">
+    退会が完了しました。ご利用ありがとうございました。
+  </div>
+)}
 
         <form onSubmit={handleSubmit} className="mt-6 space-y-4">
           <div>
