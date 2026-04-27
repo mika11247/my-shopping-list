@@ -334,38 +334,38 @@ setNewCategory("その他");
 
       {/* 👇これ追加🔥 */}
       <button
-        onClick={() => {
-  setEditingId(null);
-  setEditName("");
-  setEditYomi("");
-  setEditCategory("その他");
-}}
-        className="rounded-full bg-white px-3 py-1 text-xs text-gray-500 shadow"
-      >
-        キャンセル
-      </button>
-    </>
-  ) : (
-    <button
-      onClick={() => {
-        setEditingId(item.id);
-        setEditName(item.name);
-        setEditYomi(item.yomi ?? "");
-        setEditCategory(item.category ?? "その他");
-      }}
-      className="rounded-full bg-white px-3 py-1 text-xs text-pink-600 shadow"
-    >
-      編集
-    </button>
-  )}
+  onClick={() => {
+    setEditingId(null);
+    setEditName("");
+    setEditYomi("");
+    setEditCategory("その他");
+  }}
+  className="rounded-full bg-gray-100 px-3 py-1 text-xs text-gray-600 shadow ring-1 ring-gray-200 hover:bg-gray-200"
+>
+  キャンセル
+</button>
+</>
+) : (
+<button
+  onClick={() => {
+    setEditingId(item.id);
+    setEditName(item.name);
+    setEditYomi(item.yomi ?? "");
+    setEditCategory(item.category ?? "その他");
+  }}
+  className="rounded-full bg-pink-100 px-3 py-1 text-xs text-pink-600 shadow ring-1 ring-pink-200 hover:bg-pink-200"
+>
+  編集
+</button>
+)}
 
-  <button
+<button
   onClick={() => {
     if (confirm(`「${item.name}」を削除していい？`)) {
       deleteMasterItem(item.id);
     }
   }}
-  className="text-red-500 hover:underline"
+  className="rounded-full bg-red-100 px-3 py-1 text-xs text-red-600 shadow ring-1 ring-red-200 hover:bg-red-200"
 >
   削除
 </button>
