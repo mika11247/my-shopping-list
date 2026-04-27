@@ -360,11 +360,15 @@ setNewCategory("その他");
   )}
 
   <button
-    onClick={() => deleteMasterItem(item.id)}
-    className="rounded-full bg-white px-3 py-1 text-xs text-red-500 shadow"
-  >
-    削除
-  </button>
+  onClick={() => {
+    if (confirm(`「${item.name}」を削除していい？`)) {
+      deleteMasterItem(item.id);
+    }
+  }}
+  className="text-red-500 hover:underline"
+>
+  削除
+</button>
 </div>
               </li>
             ))}

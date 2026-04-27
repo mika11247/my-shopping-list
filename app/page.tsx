@@ -632,7 +632,7 @@ await supabase
 <select
   value={selectedCategory}
   onChange={(e) => setSelectedCategory(e.target.value)}
-  className="mt-2 w-full rounded-xl border border-neutral-300 px-4 py-2 text-sm"
+  className="mt-2 w-full rounded-xl border border-neutral-300 px-4 py-2 text-base text-gray-800 outline-none focus:border-neutral-500 focus:ring-2 focus:ring-neutral-200"
 >
   {categories.map((cat) => (
     <option key={cat} value={cat}>
