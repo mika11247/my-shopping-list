@@ -72,7 +72,7 @@ const [editYomi, setEditYomi] = useState("");
 
     const { data, error } = await supabase
       .from("user_item_master")
-      .select("id, name, yomi, category, user_id")
+      .select("id, name, yomi, category, user_id, image_url")
       .eq("user_id", userId)
       .order("name", { ascending: true });
 
@@ -106,36 +106,30 @@ if (!yomiToSave) {
       return;
     }
 
-    const { error } = await supabase.from("user_item_master")
-    .upsert(
-  [
-    {
-      user_id: userId,
-      name: trimmedName,
-      yomi: yomiToSave, // ←ここ🔥
-      category: newCategory,
-    },
-  ],
+    const { data, error } = await supabase
+  .from("user_item_master")
+  .upsert(
+    [
       {
-        onConflict: "user_id,name",
-      }
-    );
+        user_id: userId,
+        name: trimmedName,
+        yomi: yomiToSave,
+        category: newCategory,
+      },
+    ],
+    {
+      onConflict: "user_id,name",
+    }
+  )
+  .select()
+  .single();
 
     if (error) {
       console.error("追加エラー:", error);
       return;
     }
 
-   setItems((prev) => [
-  ...prev,
-  {
-    id: Date.now(),
-    name: trimmedName,
-    yomi: yomiToSave,
-    category: newCategory,
-    user_id: userId,
-  },
-]);
+   setItems((prev) => [...prev, data]);
 
 setNewItem("");
 setNewYomi(""); // ←ここ🔥
