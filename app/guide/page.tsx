@@ -1,7 +1,22 @@
+"use client";
+
+import { useRouter } from "next/navigation";
+
 export default function GuidePage() {
+  const router = useRouter();
+
   return (
     <main className="min-h-screen bg-orange-50 p-4">
       <div className="mx-auto max-w-xl space-y-4">
+
+        {/* ← 戻るボタン（ここに置く） */}
+        <button
+          onClick={() => router.back()}
+          className="w-fit rounded-full bg-orange-100 px-3 py-1 text-xs text-orange-600 shadow ring-1 ring-orange-200 hover:bg-orange-200"
+        >
+          ← 戻る
+        </button>
+
         <div className="rounded-3xl bg-white p-6 shadow-sm ring-1 ring-orange-100">
           <p className="mb-2 text-3xl">🛒</p>
           <h1 className="text-2xl font-bold text-orange-500">
@@ -19,21 +34,9 @@ export default function GuidePage() {
           </h2>
 
           <div className="space-y-3">
-            <GuideItem
-              icon="➕"
-              title="アイテムを追加"
-              text="買いたいものを入力してリストに追加します。"
-            />
-            <GuideItem
-              icon="✅"
-              title="買ったらチェック"
-              text="買い物が終わったらチェックして管理できます。"
-            />
-            <GuideItem
-              icon="🗑️"
-              title="不要なら削除"
-              text="もういらないアイテムは削除できます。"
-            />
+            <GuideItem icon="➕" title="アイテムを追加" text="買いたいものを入力してリストに追加します。" />
+            <GuideItem icon="✅" title="買ったらチェック" text="買い物が終わったらチェックして管理できます。" />
+            <GuideItem icon="🗑️" title="不要なら削除" text="もういらないアイテムは削除できます。" />
           </div>
         </section>
 
@@ -43,26 +46,10 @@ export default function GuidePage() {
           </h2>
 
           <div className="grid gap-3">
-            <GuideItem
-              icon="🔍"
-              title="検索から追加"
-              text="よく使うアイテムは検索してすぐ追加できます。"
-            />
-            <GuideItem
-              icon="💖"
-              title="My items"
-              text="自分用の候補アイテムを編集・管理できます。"
-            />
-            <GuideItem
-              icon="🕒"
-              title="履歴"
-              text="削除したアイテムをあとから確認できます。"
-            />
-            <GuideItem
-              icon="👤"
-              title="My page"
-              text="メール確認やパスワードリセットができます。"
-            />
+            <GuideItem icon="🔍" title="検索から追加" text="よく使うアイテムは検索してすぐ追加できます。" />
+            <GuideItem icon="💖" title="My items" text="自分用の候補アイテムを編集・管理できます。" />
+            <GuideItem icon="🕒" title="履歴" text="削除したアイテムをあとから確認できます。" />
+            <GuideItem icon="👤" title="My page" text="メール確認やパスワードリセットができます。" />
           </div>
         </section>
 

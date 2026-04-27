@@ -42,8 +42,24 @@ export default function RootLayout({
         {children}
 
         <footer className="text-center text-xs text-gray-400 py-4">
-          <Link href="/disclaimer">免責事項</Link>
-        </footer>
+  <div className="flex justify-center gap-4">
+    <Link href="/disclaimer" className="hover:text-gray-600">
+      免責事項
+    </Link>
+
+    <Link href="/privacy" className="hover:text-purple-500">
+      プライバシー
+    </Link>
+
+    <Link href="/guide" className="hover:text-orange-500">
+      ガイド
+    </Link>
+  </div>
+
+  <p className="mt-2 text-[10px] text-gray-400">
+  © 2026 My Shopping List by <span className="text-gray-500">M.glitter</span>
+</p>
+</footer>
       </body>
     </html>
   );

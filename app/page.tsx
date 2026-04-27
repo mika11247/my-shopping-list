@@ -560,6 +560,13 @@ await supabase
   ガイド ❓
 </button>
 
+<button
+  onClick={() => router.push("/privacy")}
+  className="rounded-full bg-purple-100 px-3 py-1 text-xs text-purple-600 shadow ring-1 ring-purple-200 hover:bg-purple-200"
+>
+  プライバシー 🔐
+</button>
+
 </div>
 
   <p className="mt-2 text-sm text-neutral-600">
