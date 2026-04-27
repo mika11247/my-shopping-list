@@ -48,7 +48,7 @@ export default function ResetPasswordPage() {
             type="password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
-            className="w-full rounded-xl border border-lime-200 px-3 py-2 text-sm outline-none focus:border-lime-500"
+            className="w-full rounded-xl border border-lime-200 px-3 py-2 text-base outline-none focus:border-lime-500"
           />
 
           <button

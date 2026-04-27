@@ -211,7 +211,7 @@ setNewCategory("その他");
       }
     }}
     placeholder="アイテム追加"
-    className="rounded-xl border border-pink-100 bg-white px-3 py-2 text-sm text-gray-700"
+    className="rounded-xl border border-pink-100 bg-white px-3 py-2 text-base text-gray-700"
   />
 
   {/* 👇これ追加🔥 */}
@@ -219,14 +219,14 @@ setNewCategory("その他");
     value={newYomi}
     onChange={(e) => setNewYomi(e.target.value)}
     placeholder="よみ（ひらがな／空欄でもOK）"
-    className="rounded-xl border border-pink-100 bg-white px-3 py-2 text-sm text-gray-700"
+    className="rounded-xl border border-pink-100 bg-white px-3 py-2 text-base text-gray-700"
   />
 
   <div className="flex gap-2">
     <select
       value={newCategory}
       onChange={(e) => setNewCategory(e.target.value)}
-      className="flex-1 rounded-xl border border-pink-100 bg-white px-3 py-2 text-sm text-gray-700"
+      className="flex-1 rounded-xl border border-pink-100 bg-white px-3 py-2 text-base text-gray-700"
     >
       {categories.map((cat) => (
         <option key={cat} value={cat}>
@@ -272,7 +272,7 @@ setNewCategory("その他");
                          ); 
                         }
                       }}
-                      className="rounded-xl border border-pink-200 bg-white px-3 py-1 text-sm text-gray-800 outline-none"
+                      className="rounded-xl border border-pink-200 bg-white px-3 py-1 text-base text-gray-800 outline-none"
                       autoFocus
                     />
                     <input
@@ -285,7 +285,7 @@ setNewCategory("その他");
                     <select
                       value={editCategory}
                       onChange={(e) => setEditCategory(e.target.value)}
-                      className="rounded-xl border border-pink-200 bg-white px-3 py-1 text-sm text-gray-800"
+                      className="rounded-xl border border-pink-200 bg-white px-3 py-1 text-base text-gray-800"
                     >
                       {categories.map((cat) => (
                         <option key={cat} value={cat}>

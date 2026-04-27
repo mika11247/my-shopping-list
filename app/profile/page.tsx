@@ -213,7 +213,7 @@ router.push("/login?withdraw=1");
                     <input
                       value={displayName}
                       onChange={(e) => setDisplayName(e.target.value)}
-                      className="flex-1 rounded-xl border border-lime-200 px-3 py-2 text-sm outline-none focus:border-lime-500"
+                      className="flex-1 rounded-xl border border-lime-200 px-3 py-2 text-base outline-none focus:border-lime-500"
                     />
                     <button
                       onClick={updateDisplayName}
@@ -240,7 +240,7 @@ router.push("/login?withdraw=1");
         <input
           value={newEmail}
           onChange={(e) => setNewEmail(e.target.value)}
-          className="flex-1 rounded-xl border border-lime-200 px-3 py-2 text-sm outline-none focus:border-lime-500"
+          className="flex-1 rounded-xl border border-lime-200 px-3 py-2 text-base outline-none focus:border-lime-500"
         />
         <button
           onClick={updateEmail}

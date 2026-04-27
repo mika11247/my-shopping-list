@@ -606,7 +606,7 @@ await supabase
         });
       }
     }}
-    className="flex-1 rounded-xl border border-neutral-300 px-4 py-3 text-sm outline-none focus:border-neutral-500"
+    className="flex-1 rounded-xl border border-neutral-300 px-4 py-3 text-base outline-none focus:border-neutral-500"
   />
 
   <button
@@ -682,7 +682,7 @@ await supabase
       isManual: true,
     })
   }
-  className="mt-2 mr-2 rounded-lg bg-blue-500 px-3 py-2 text-sm text-white"
+  className="mt-2 mr-2 rounded-lg bg-blue-500 px-3 py-2 text-base text-white"
 >
   「{search}」をMy itemsに追加
 </button>
@@ -698,7 +698,7 @@ await supabase
               isManual: false,
             })
           }
-          className="mt-2 rounded-lg bg-neutral-500 px-3 py-2 text-sm text-white"
+          className="mt-2 rounded-lg bg-neutral-500 px-3 py-2 text-base text-white"
         >
           「{search}」を一時追加する
         </button>
@@ -736,14 +736,14 @@ await supabase
                   <input
                     value={editName}
                     onChange={(e) => setEditName(e.target.value)}
-                    className="flex-1 rounded-lg border border-neutral-300 px-3 py-2 text-sm"
+                    className="flex-1 rounded-lg border border-neutral-300 px-3 py-2 text-base"
                     placeholder="食材名"
                   />
 
                   <select
                     value={editCategory}
                     onChange={(e) => setEditCategory(e.target.value)}
-                    className="rounded-lg border border-neutral-300 px-3 py-2 text-sm"
+                    className="flex-1 rounded-lg border border-neutral-300 px-3 py-2 text-base"
                   >
                     {categories.map((cat) => (
                       <option key={cat} value={cat}>
@@ -755,7 +755,7 @@ await supabase
                   <input
                     value={editNote}
                     onChange={(e) => setEditNote(e.target.value)}
-                    className="flex-1 rounded-lg border border-neutral-300 px-3 py-2 text-sm"
+                   className="flex-1 rounded-lg border border-neutral-300 px-3 py-2 text-base"
                     placeholder="メモ"
                   />
 
@@ -788,7 +788,14 @@ await supabase
     item.checked ? "bg-gray-100 opacity-50" : "bg-lime-50"
   }`}
 >
-  {item.image_url ?? "🛒"}
+  {item.image_url?.startsWith("http") ? (
+  <img
+    src={item.image_url}
+    className="h-8 w-8 object-cover rounded"
+  />
+) : (
+  <span>{item.image_url ?? "🛒"}</span>
+)}
 </div>
 
                     <div>
