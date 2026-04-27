@@ -527,7 +527,7 @@ await supabase
     onClick={() => router.push("/profile")}
     className="rounded-full bg-lime-100 px-3 py-1 text-xs text-lime-700 shadow ring-1 ring-lime-200 hover:bg-lime-200"
   >
-    マイページ 👤
+    My page 👤
   </button>
 
   {/* My items：ピンク */}

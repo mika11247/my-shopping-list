@@ -131,14 +131,37 @@ export default function ProfilePage() {
   };
 
   const handleWithdraw = async () => {
-    const ok = window.confirm(
-      "退会処理は準備中です。今はログアウトのみ行いますか？"
-    );
+  const ok = window.confirm(
+    "本当に退会しますか？\nアカウントと登録データは削除されます。"
+  );
 
-    if (!ok) return;
+  if (!ok) return;
 
-    await handleLogout();
-  };
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    setMessage("ログイン情報を取得できませんでした");
+    return;
+  }
+
+  const response = await fetch("/api/delete-user", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ userId: user.id }),
+  });
+
+  if (!response.ok) {
+    setMessage("退会処理に失敗しました");
+    return;
+  }
+
+  await supabase.auth.signOut();
+  router.push("/login");
+};
 
   useEffect(() => {
     fetchProfile();
