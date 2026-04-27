@@ -1,11 +1,10 @@
 "use client";
 
-import { FormEvent, useEffect, useState } from "react";
+import { FormEvent, useEffect, useState, Suspense } from "react";
 import { supabase } from "@/lib/supabase";
-import { useRouter } from "next/navigation";
-import { useSearchParams } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 
-export default function LoginPage() {
+function LoginContent() {
   const router = useRouter();
 
   const [email, setEmail] = useState("");
@@ -13,26 +12,27 @@ export default function LoginPage() {
   const [mode, setMode] = useState<"login" | "signup">("login");
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState("");
+
   const searchParams = useSearchParams();
-const isWithdraw = searchParams.get("withdraw");
+  const isWithdraw = searchParams.get("withdraw");
 
   const sendPasswordResetEmail = async () => {
-  if (!email) {
-    setMessage("メールアドレスを入力してください");
-    return;
-  }
+    if (!email) {
+      setMessage("メールアドレスを入力してください");
+      return;
+    }
 
-  const { error } = await supabase.auth.resetPasswordForEmail(email, {
-    redirectTo: `${window.location.origin}/reset-password`,
-  });
+    const { error } = await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: `${window.location.origin}/reset-password`,
+    });
 
-  if (error) {
-    setMessage("再設定メールの送信に失敗しました");
-    return;
-  }
+    if (error) {
+      setMessage("再設定メールの送信に失敗しました");
+      return;
+    }
 
-  setMessage("パスワード再設定メールを送信しました");
-};
+    setMessage("パスワード再設定メールを送信しました");
+  };
 
   useEffect(() => {
     const checkUser = async () => {
@@ -99,10 +99,10 @@ const isWithdraw = searchParams.get("withdraw");
         </p>
 
         {isWithdraw && (
-  <div className="mb-4 rounded-2xl bg-green-50 px-4 py-3 text-sm font-bold text-green-600 ring-1 ring-green-200">
-    退会が完了しました。ご利用ありがとうございました。
-  </div>
-)}
+          <div className="mb-4 rounded-2xl bg-green-50 px-4 py-3 text-sm font-bold text-green-600 ring-1 ring-green-200">
+            退会が完了しました。ご利用ありがとうございました。
+          </div>
+        )}
 
         <form onSubmit={handleSubmit} className="mt-6 space-y-4">
           <div>
@@ -151,14 +151,13 @@ const isWithdraw = searchParams.get("withdraw");
               : "新規登録"}
           </button>
 
-<button
-  type="button"
-  onClick={() => router.push("/forgot-password")}
-  className="mt-3 text-xs font-bold text-lime-700 underline"
->
-  パスワードを忘れた方はこちら
-</button>
-
+          <button
+            type="button"
+            onClick={() => router.push("/forgot-password")}
+            className="mt-3 text-xs font-bold text-lime-700 underline"
+          >
+            パスワードを忘れた方はこちら
+          </button>
         </form>
 
         <div className="mt-4 text-center text-sm">
@@ -184,10 +183,17 @@ const isWithdraw = searchParams.get("withdraw");
             >
               すでにアカウントがある
             </button>
-
           )}
         </div>
       </div>
     </main>
+  );
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense fallback={<div>読み込み中...</div>}>
+      <LoginContent />
+    </Suspense>
   );
 }
