@@ -57,6 +57,7 @@ export default function Home() {
   const [editCategory, setEditCategory] = useState("その他");
   const [editNote, setEditNote] = useState("");
   const [userMasterItems, setUserMasterItems] = useState<CandidateItem[]>([]);
+  const [displayName, setDisplayName] = useState("");
 
   const handleLogout = async () => {
   await supabase.auth.signOut();
@@ -91,6 +92,13 @@ useEffect(() => {
     }
 
     setUserId(user.id);
+
+    const name =
+      user.user_metadata?.display_name ??
+      user.email?.split("@")[0] ??
+      "";
+
+    setDisplayName(name);
     setUserEmail(user.email ?? "");
   };
 
@@ -488,50 +496,62 @@ await supabase
     
     <main className="min-h-screen bg-neutral-50 px-4 py-8">
       <div className="mx-auto max-w-xl">
-        <header className="mb-6 flex justify-between items-start">
-  <div>
+        <header className="mb-6">
   <div className="mb-4 flex items-start justify-between gap-4">
-  <div>
-    <p className="text-sm text-neutral-500">My Shopping List</p>
+    <div>
+      <p className="text-sm text-neutral-500">My Shopping List</p>
 
-    <h1 className="text-3xl font-bold text-neutral-900">
-      お買い物リスト
-    </h1>
+      <h1 className="text-3xl font-bold text-neutral-900">
+        お買い物リスト
+      </h1>
 
-    {userEmail && (
-      <p className="mt-1 text-xs text-neutral-500">
-        ログイン中：{userEmail.split("@")[0]}
-      </p>
-    )}
+      {displayName && (
+  <p className="mt-1 text-xs text-neutral-500">
+    ログイン中：{displayName}様
+  </p>
+)}
+    </div>
+
+    <button
+      onClick={handleLogout}
+      className="rounded-xl bg-neutral-200 px-3 py-2 text-sm text-neutral-700"
+    >
+      ログアウト
+    </button>
   </div>
 
+  <div className="mb-4 flex flex-wrap gap-2">
+
+  {/* マイページ：黄緑 */}
+  <button
+    onClick={() => router.push("/profile")}
+    className="rounded-full bg-lime-100 px-3 py-1 text-xs text-lime-700 shadow ring-1 ring-lime-200 hover:bg-lime-200"
+  >
+    マイページ 👤
+  </button>
+
+  {/* My items：ピンク */}
   <button
     onClick={() => router.push("/master")}
-    className="mt-1 rounded-full bg-white px-3 py-1 text-sm text-blue-500 shadow-sm ring-1 ring-neutral-200"
+    className="rounded-full bg-pink-100 px-3 py-1 text-xs text-pink-600 shadow ring-1 ring-pink-200 hover:bg-pink-200"
   >
-    My items
+    My items 💖
   </button>
-</div>
 
-<button
-  onClick={() => router.push("/history")}
-  className="rounded-full bg-white px-3 py-1 text-xs text-gray-600 shadow ring-1 ring-pink-100"
->
-  履歴
-</button>
+  {/* 履歴：水色 */}
+  <button
+    onClick={() => router.push("/history")}
+    className="rounded-full bg-sky-100 px-3 py-1 text-xs text-sky-600 shadow ring-1 ring-sky-200 hover:bg-sky-200"
+  >
+    履歴 🕒
+  </button>
+
+</div>
 
   <p className="mt-2 text-sm text-neutral-600">
     よく使うアイテムを検索して、かんたんに追加できます
     <span className="ml-1 text-xs text-neutral-400">（β版）</span>
   </p>
-</div>
-
-  <button
-    onClick={handleLogout}
-    className="rounded-xl bg-neutral-200 px-3 py-2 text-sm text-neutral-700"
-  >
-    ログアウト
-  </button>
 </header>
 
         <div className="mb-4 flex justify-end">
