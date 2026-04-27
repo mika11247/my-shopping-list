@@ -148,22 +148,32 @@ setNewCategory("その他");
   yomi: string,
   category: string
 ) => {
-    const { error } = await supabase
-      .from("user_item_master")
-      .update({ name, yomi, category })
-      .eq("id", id);
+  if (!userId) return;
 
-    if (error) {
-      console.error("更新エラー:", error);
-    } else {
-      setItems((prev) =>
-  prev.map((item) =>
-    item.id === id ? { ...item, name, yomi, category } : item
-  )
-);
-      setEditingId(null);
-    }
-  };
+  const { data, error } = await supabase
+    .from("user_item_master")
+    .update({ name, yomi, category })
+    .eq("id", id)
+    .eq("user_id", userId)
+    .select();
+
+  console.log("更新結果:", data);
+  console.log("更新エラー:", error);
+
+  if (error) {
+    console.error("更新エラー:", error);
+    alert("更新に失敗しました");
+    return;
+  }
+
+  setItems((prev) =>
+    prev.map((item) =>
+      item.id === id ? { ...item, name, yomi, category } : item
+    )
+  );
+
+  setEditingId(null);
+};
 
   const deleteMasterItem = async (id: number) => {
     const { error } = await supabase
@@ -304,16 +314,23 @@ setNewCategory("その他");
   {editingId === item.id ? (
     <>
       <button
+  type="button"
   onClick={() => {
-    console.log("保存するよみ:", editYomi);
+    console.log("💾 保存:", {
+      name: editName,
+      yomi: editYomi,
+      category: editCategory,
+    });
 
     if (editName.trim() !== "") {
-      updateMasterItem(
-        item.id,
-        editName.trim(),
-        editYomi.trim(),
-        editCategory
-      );
+      setTimeout(() => {
+        updateMasterItem(
+          item.id,
+          editName.trim(),
+          editYomi.trim(),
+          editCategory
+        );
+      }, 0);
     }
   }}
   className="rounded-full bg-white px-3 py-1 text-xs text-green-600 shadow"
