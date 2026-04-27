@@ -552,6 +552,14 @@ await supabase
     履歴 🕒
   </button>
 
+  {/* ガイド：オレンジ */}
+<button
+  onClick={() => router.push("/guide")}
+  className="rounded-full bg-orange-100 px-3 py-1 text-xs text-orange-600 shadow ring-1 ring-orange-200 hover:bg-orange-200"
+>
+  ガイド ❓
+</button>
+
 </div>
 
   <p className="mt-2 text-sm text-neutral-600">
