@@ -13,6 +13,15 @@ function LoginContent() {
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState("");
 
+  const handleGoogleLogin = async () => {
+  await supabase.auth.signInWithOAuth({
+    provider: "google",
+    options: {
+      redirectTo: `${window.location.origin}/`,
+    },
+  });
+};
+
   const searchParams = useSearchParams();
   const isWithdraw = searchParams.get("withdraw");
 
@@ -138,6 +147,14 @@ function LoginContent() {
               {message}
             </p>
           )}
+
+          <button
+  type="button"
+  onClick={handleGoogleLogin}
+  className="w-full rounded-xl bg-white px-4 py-3 text-sm font-bold text-neutral-700 shadow-sm ring-1 ring-neutral-200"
+>
+  Googleでログイン
+</button>
 
           <button
             type="submit"
