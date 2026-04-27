@@ -163,15 +163,12 @@ function LoginContent() {
         <div className="mt-4 text-center text-sm">
           {mode === "login" ? (
             <button
-              type="button"
-              onClick={() => {
-                setMode("signup");
-                setMessage("");
-              }}
-              className="text-blue-500"
-            >
-              アカウントを作る
-            </button>
+  type="button"
+  onClick={() => router.push("/signup")}
+  className="text-blue-500"
+>
+  アカウントを作る
+</button>
           ) : (
             <button
               type="button"
