@@ -13,6 +13,24 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState("");
 
+  const sendPasswordResetEmail = async () => {
+  if (!email) {
+    setMessage("メールアドレスを入力してください");
+    return;
+  }
+
+  const { error } = await supabase.auth.resetPasswordForEmail(email, {
+    redirectTo: `${window.location.origin}/reset-password`,
+  });
+
+  if (error) {
+    setMessage("再設定メールの送信に失敗しました");
+    return;
+  }
+
+  setMessage("パスワード再設定メールを送信しました");
+};
+
   useEffect(() => {
     const checkUser = async () => {
       const {
@@ -123,6 +141,15 @@ export default function LoginPage() {
               ? "ログイン"
               : "新規登録"}
           </button>
+
+<button
+  type="button"
+  onClick={sendPasswordResetEmail}
+  className="mt-3 text-xs font-bold text-lime-700 underline"
+>
+  パスワードを忘れた方はこちら
+</button>
+
         </form>
 
         <div className="mt-4 text-center text-sm">
@@ -148,6 +175,7 @@ export default function LoginPage() {
             >
               すでにアカウントがある
             </button>
+
           )}
         </div>
       </div>
