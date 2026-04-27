@@ -151,7 +151,7 @@ function LoginContent() {
           <button
   type="button"
   onClick={handleGoogleLogin}
-  className="w-full rounded-xl bg-white px-4 py-3 text-sm font-bold text-neutral-700 shadow-sm ring-1 ring-neutral-200"
+  className="w-full flex items-center justify-center gap-2 rounded-xl bg-white px-4 py-3 text-sm font-bold text-neutral-700 shadow-sm ring-1 ring-neutral-200"
 >
   Googleでログイン
 </button>

@@ -15,6 +15,9 @@ export default function ProfilePage() {
   const [historyCount, setHistoryCount] = useState(0);
   const [loading, setLoading] = useState(true);
   const [message, setMessage] = useState("");
+  const [provider, setProvider] = useState("");
+
+  const isGoogleUser = provider === "google";
 
   const fetchProfile = async () => {
     setLoading(true);
@@ -35,6 +38,7 @@ export default function ProfilePage() {
     setDisplayName(
       user.user_metadata?.display_name ?? userEmail.split("@")[0]
     );
+    setProvider(user.app_metadata?.provider ?? "email");
 
     const [{ count: shopping }, { count: master }, { count: history }] =
       await Promise.all([
@@ -220,37 +224,48 @@ router.push("/login?withdraw=1");
                   </div>
                 </div>
 
-                <div>
-                  <label className="mb-1 block text-xs text-gray-500">
-                    メールアドレス
-                  </label>
-                  <div className="flex gap-2">
-                    <input
-                      value={newEmail}
-                      onChange={(e) => setNewEmail(e.target.value)}
-                      className="flex-1 rounded-xl border border-lime-200 px-3 py-2 text-sm outline-none focus:border-lime-500"
-                    />
-                    <button
-                      onClick={updateEmail}
-                      className="rounded-xl bg-lime-500 px-3 py-2 text-xs font-bold text-white"
-                    >
-                      変更
-                    </button>
-                  </div>
-                  <p className="mt-1 text-xs text-gray-400">
-                    メール変更には確認メールの承認が必要です。
-                  </p>
-                </div>
+                {isGoogleUser ? (
+  <div className="rounded-2xl bg-yellow-50 p-3 text-xs text-yellow-700 ring-1 ring-yellow-100">
+    Googleアカウントでログイン中のため、
+    メールアドレス・パスワードの変更はGoogle側で管理されています。
+  </div>
+) : (
+  <>
+    {/* メール変更 */}
+    <div>
+      <label className="mb-1 block text-xs text-gray-500">
+        メールアドレス
+      </label>
+      <div className="flex gap-2">
+        <input
+          value={newEmail}
+          onChange={(e) => setNewEmail(e.target.value)}
+          className="flex-1 rounded-xl border border-lime-200 px-3 py-2 text-sm outline-none focus:border-lime-500"
+        />
+        <button
+          onClick={updateEmail}
+          className="rounded-xl bg-lime-500 px-3 py-2 text-xs font-bold text-white"
+        >
+          変更
+        </button>
+      </div>
+      <p className="mt-1 text-xs text-gray-400">
+        メール変更には確認メールの承認が必要です。
+      </p>
+    </div>
 
-                <div className="rounded-2xl bg-lime-50 p-3 ring-1 ring-lime-100">
-  <p className="text-xs text-gray-500">パスワード</p>
-  <button
-    onClick={sendPasswordResetEmail}
-    className="mt-2 rounded-full bg-lime-500 px-4 py-2 text-xs font-bold text-white"
-  >
-    パスワード再設定メールを送る
-  </button>
-</div>
+    {/* パスワード変更 */}
+    <div className="rounded-2xl bg-lime-50 p-3 ring-1 ring-lime-100">
+      <p className="text-xs text-gray-500">パスワード</p>
+      <button
+        onClick={sendPasswordResetEmail}
+        className="mt-2 rounded-full bg-lime-500 px-4 py-2 text-xs font-bold text-white"
+      >
+        パスワード再設定メールを送る
+      </button>
+    </div>
+  </>
+)}
 
                 <div className="rounded-2xl bg-lime-50 p-3 ring-1 ring-lime-100">
                   <p className="text-xs text-gray-500">会員状況</p>
