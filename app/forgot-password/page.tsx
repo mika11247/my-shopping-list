@@ -21,9 +21,10 @@ export default function ForgotPasswordPage() {
     });
 
     if (error) {
-      setMessage("メール送信に失敗しました");
-      return;
-    }
+  console.error("パスワード再設定メール送信エラー:", error);
+  setMessage(`メール送信に失敗しました：${error.message}`);
+  return;
+}
 
     setMessage("パスワード再設定メールを送信しました");
   };
