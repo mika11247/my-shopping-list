@@ -11,6 +11,7 @@ type ShoppingItem = {
   note: string;
   checked: boolean;
   created_at?: string;
+  image_url?: string | null;
 };
 
 type CandidateItem = {
@@ -18,6 +19,7 @@ type CandidateItem = {
   yomi?: string;
   category?: string;
   note?: string;
+  image_url?: string;
 };
 
 const categories = [
@@ -114,7 +116,7 @@ useEffect(() => {
   ] = await Promise.all([
     supabase
       .from("item_master")
-      .select("name, yomi, category, note")
+      .select("name, yomi, category, note, image_url")
       .order("id", { ascending: true }),
 
     supabase
@@ -144,6 +146,7 @@ useEffect(() => {
     yomi: item.yomi ?? "",
     category: item.category ?? "その他",
     note: item.note ?? "",
+    image_url: (item as any).image_url ?? "🛒", // ←これ🔥
   }));
 
   const userCandidates: CandidateItem[] = (userData || []).map((item) => ({
@@ -151,6 +154,7 @@ useEffect(() => {
   yomi: item.yomi ?? item.name,
   category: item.category ?? "その他",
   note: "",
+  image_url: (item as any).image_url ?? "🛒", // ←これ🔥
 }));
 
   const merged = [...userCandidates, ...defaultCandidates];
@@ -240,7 +244,8 @@ const filteredItems = candidateItems.filter((item) => {
   category: string;
   note: string;
   saveToMaster?: boolean;
-  isManual?: boolean; // ← 追加🔥
+  isManual?: boolean;
+  image_url?: string;
 }) => {
   
   if (!userId) {
@@ -302,6 +307,7 @@ if (matchedUserMaster?.category) {
       category: categoryToSave,
       note: item.note,
       checked: false,
+      image_url: item.image_url ?? "🛒",
     },
   ])
   .select()
@@ -629,14 +635,15 @@ await supabase
             key={item.name}
             type="button"
             onClick={() =>
-              addItem({
-                name: item.name,
-                category: item.category ?? "その他",
-                note: item.note ?? "",
-                saveToMaster: false,
-                isManual: true,
-              })
-            }
+  addItem({
+    name: item.name,
+    category: item.category ?? "その他",
+    note: item.note ?? "",
+    image_url: item.image_url ?? "🛒",
+    saveToMaster: false,
+    isManual: true,
+  })
+}
             className="rounded-full bg-neutral-100 px-3 py-1 text-sm text-neutral-700 transition hover:bg-neutral-200"
           >
             {item.name}
@@ -687,116 +694,127 @@ await supabase
         </section>
 
         <section className="space-y-4">
-          {groupedItems.map(({ category, items }) => (
+  {groupedItems.map(({ category, items }) => (
+    <div
+      key={category}
+      className="rounded-2xl bg-white p-4 shadow-sm ring-1 ring-neutral-200"
+    >
+      <h2 className="mb-3 text-lg font-semibold text-neutral-800">
+        {category}
+      </h2>
+
+      {items.length === 0 ? (
+        <p className="text-sm text-neutral-400">まだありません</p>
+      ) : (
+        <div className="space-y-3">
+          {items.map((item) => (
             <div
-              key={category}
-              className="rounded-2xl bg-white p-4 shadow-sm ring-1 ring-neutral-200"
+              key={item.id}
+              className="flex items-center justify-between rounded-xl border border-neutral-100 p-3"
             >
-              <h2 className="mb-3 text-lg font-semibold text-neutral-800">
-                {category}
-              </h2>
+              {editingId === item.id ? (
+                <div className="flex w-full flex-col gap-2 sm:flex-row sm:items-start">
+                  <input
+                    value={editName}
+                    onChange={(e) => setEditName(e.target.value)}
+                    className="flex-1 rounded-lg border border-neutral-300 px-3 py-2 text-sm"
+                    placeholder="食材名"
+                  />
 
-              {items.length === 0 ? (
-                <p className="text-sm text-neutral-400">まだありません</p>
+                  <select
+                    value={editCategory}
+                    onChange={(e) => setEditCategory(e.target.value)}
+                    className="rounded-lg border border-neutral-300 px-3 py-2 text-sm"
+                  >
+                    {categories.map((cat) => (
+                      <option key={cat} value={cat}>
+                        {cat}
+                      </option>
+                    ))}
+                  </select>
+
+                  <input
+                    value={editNote}
+                    onChange={(e) => setEditNote(e.target.value)}
+                    className="flex-1 rounded-lg border border-neutral-300 px-3 py-2 text-sm"
+                    placeholder="メモ"
+                  />
+
+                  <button
+                    onClick={saveEdit}
+                    className="rounded-lg bg-blue-500 px-3 py-2 text-sm text-white"
+                  >
+                    保存
+                  </button>
+
+                  <button
+                    onClick={cancelEdit}
+                    className="rounded-lg bg-neutral-200 px-3 py-2 text-sm text-neutral-700"
+                  >
+                    キャンセル
+                  </button>
+                </div>
               ) : (
-                <div className="space-y-3">
-                  {items.map((item) => (
-                    <div
-                      key={item.id}
-                      className="flex items-start gap-3 rounded-xl border border-neutral-100 p-3"
-                    >
-                      {editingId === item.id ? (
-                        <div className="flex w-full flex-col gap-2 sm:flex-row sm:items-start">
-                          <input
-                            value={editName}
-                            onChange={(e) => setEditName(e.target.value)}
-                            className="flex-1 rounded-lg border border-neutral-300 px-3 py-2 text-sm"
-                            placeholder="食材名"
-                          />
+                <>
+                  <div className="flex items-center gap-3">
+                    <input
+                      type="checkbox"
+                      checked={item.checked}
+                      onChange={() => toggleItem(item.id, item.checked)}
+                      className="h-4 w-4"
+                    />
 
-                          <select
-                            value={editCategory}
-                            onChange={(e) => setEditCategory(e.target.value)}
-                            className="rounded-lg border border-neutral-300 px-3 py-2 text-sm"
-                          >
-                            {categories.map((cat) => (
-                              <option key={cat} value={cat}>
-                                {cat}
-                              </option>
-                            ))}
-                          </select>
+                    <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-lime-50 text-xl">
+                      {item.image_url ?? "🛒"}
+                    </div>
 
-                          <input
-                            value={editNote}
-                            onChange={(e) => setEditNote(e.target.value)}
-                            className="flex-1 rounded-lg border border-neutral-300 px-3 py-2 text-sm"
-                            placeholder="メモ"
-                          />
+                    <div>
+                      <p
+                        className={`text-sm font-medium ${
+                          item.checked
+                            ? "text-neutral-400 line-through opacity-60"
+                            : "text-gray-800"
+                        }`}
+                      >
+                        {item.name}
+                      </p>
 
-                          <button
-                            onClick={saveEdit}
-                            className="rounded-lg bg-blue-500 px-3 py-2 text-sm text-white"
-                          >
-                            保存
-                          </button>
-
-                          <button
-                            onClick={cancelEdit}
-                            className="rounded-lg bg-neutral-200 px-3 py-2 text-sm text-neutral-700"
-                          >
-                            キャンセル
-                          </button>
-                        </div>
-                      ) : (
-                        <>
-                          <input
-                            type="checkbox"
-                            checked={item.checked}
-                            onChange={() => toggleItem(item.id, item.checked)}
-                            className="mt-1 h-4 w-4"
-                          />
-
-                          <div className="flex-1">
-                            <p
-                              className={`font-medium ${
-                                item.checked
-                                  ? "text-neutral-400 line-through opacity-60"
-                                  : "text-neutral-900"
-                              }`}
-                            >
-                              {item.name}
-                            </p>
-                            <p className="text-sm text-neutral-500">
-                              {item.note}
-                            </p>
-                          </div>
-
-                          <button
-                            onClick={() => startEdit(item)}
-                            className="text-sm text-blue-500"
-                          >
-                            編集
-                          </button>
-
-                          <button
-                            onClick={() => {
-                              if (confirm("削除していい？")) {
-                                deleteItem(item.id);
-                              }
-                            }}
-                            className="ml-2 text-sm text-red-500"
-                          >
-                            削除
-                          </button>
-                        </>
+                      {item.note && (
+                        <p className="text-xs text-neutral-500">
+                          {item.note}
+                        </p>
                       )}
                     </div>
-                  ))}
-                </div>
+                  </div>
+
+                  <div className="flex gap-2 text-xs">
+                    <button
+                      onClick={() => startEdit(item)}
+                      className="text-blue-500"
+                    >
+                      編集
+                    </button>
+
+                    <button
+                      onClick={() => {
+                        if (confirm("削除していい？")) {
+                          deleteItem(item.id);
+                        }
+                      }}
+                      className="text-red-500"
+                    >
+                      削除
+                    </button>
+                  </div>
+                </>
               )}
             </div>
           ))}
-        </section>
+        </div>
+      )}
+    </div>
+  ))}
+</section>
       </div>
     </main>
   );
