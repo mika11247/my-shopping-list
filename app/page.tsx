@@ -10,6 +10,7 @@ type ShoppingItem = {
   category: string;
   note: string;
   checked: boolean;
+  group_id?: string | null;
   created_at?: string;
   image_url?: string | null;
 };
@@ -20,6 +21,17 @@ type CandidateItem = {
   category?: string;
   note?: string;
   image_url?: string;
+};
+
+type GroupOption = {
+  id: string;
+  name: string;
+};
+
+type GroupMember = {
+  user_id: string;
+  role: string;
+  display_name?: string;
 };
 
 const categories = [
@@ -53,6 +65,13 @@ export default function Home() {
   const [candidateItems, setCandidateItems] = useState<CandidateItem[]>([]);
   const [search, setSearch] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("その他");
+  const [mode, setMode] = useState<"personal" | "group">("personal");
+  const [selectedGroupId, setSelectedGroupId] = useState("");
+  const [newGroupName, setNewGroupName] = useState("");
+  const [editGroupName, setEditGroupName] = useState("");
+  const [memberUserId, setMemberUserId] = useState("");
+  const [ownedGroups, setOwnedGroups] = useState<GroupOption[]>([]);
+  const [groupMembers, setGroupMembers] = useState<GroupMember[]>([]);
 
   const [editingId, setEditingId] = useState<number | null>(null);
   const [editName, setEditName] = useState("");
@@ -60,6 +79,59 @@ export default function Home() {
   const [editNote, setEditNote] = useState("");
   const [userMasterItems, setUserMasterItems] = useState<CandidateItem[]>([]);
   const [displayName, setDisplayName] = useState("");
+
+  const [isShareManageOpen, setIsShareManageOpen] = useState(false);
+  const [inviteEmail, setInviteEmail] = useState("");
+const [inviteMessage, setInviteMessage] = useState("");
+
+const primaryBtn =
+  "rounded-xl px-4 py-2 text-sm font-semibold text-white bg-blue-500 hover:bg-blue-600";
+
+const successBtn =
+  "rounded-xl px-4 py-2 text-sm font-semibold text-white bg-green-500 hover:bg-green-600";
+
+const dangerBtn =
+  "rounded-xl px-4 py-2 text-sm font-semibold text-white bg-red-500 hover:bg-red-600";
+
+const currentMember = groupMembers.find((member) => member.user_id === userId);
+const isCurrentUserOwner = currentMember?.role === "owner";
+
+const checkInvitations = async (userId: string, email: string) => {
+  const normalizedEmail = email.trim().toLowerCase();
+
+  const { data: invites, error: inviteError } = await supabase
+    .from("invitations")
+    .select("*")
+    .eq("email", normalizedEmail)
+    .eq("status", "pending");
+
+  if (inviteError) {
+    console.error("招待チェックエラー:", inviteError);
+    return;
+  }
+
+  for (const invite of invites || []) {
+    const { error: memberError } = await supabase
+      .from("group_members")
+      .insert([
+        {
+          group_id: invite.group_id,
+          user_id: userId,
+          role: "member",
+        },
+      ]);
+
+    if (memberError && memberError.code !== "23505") {
+      console.error("招待からメンバー追加エラー:", memberError);
+      continue;
+    }
+
+    await supabase
+      .from("invitations")
+      .update({ status: "accepted" })
+      .eq("id", invite.id);
+  }
+};
 
   const handleLogout = async () => {
   await supabase.auth.signOut();
@@ -72,7 +144,7 @@ useEffect(() => {
   fetchItems();
   fetchCandidateItems();
   fetchUserMasterItems(); // ←追加🔥
-}, [userId]);
+}, [userId, mode, selectedGroupId]);
 
 useEffect(() => {
   if (!userId) return;
@@ -80,7 +152,26 @@ useEffect(() => {
   fetchItems();
   fetchCandidateItems();
   fetchUserMasterItems();
+}, [userId, mode, selectedGroupId]);
+
+useEffect(() => {
+  if (!userId) return;
+  fetchOwnedGroups();
 }, [userId]);
+
+useEffect(() => {
+  const currentGroup = ownedGroups.find((group) => group.id === selectedGroupId);
+  setEditGroupName(currentGroup?.name ?? "");
+}, [ownedGroups, selectedGroupId]);
+
+useEffect(() => {
+  if (mode !== "group" || !selectedGroupId) {
+    setGroupMembers([]);
+    return;
+  }
+
+  fetchGroupMembers();
+}, [mode, selectedGroupId]);
 
 useEffect(() => {
   const checkUser = async () => {
@@ -95,13 +186,26 @@ useEffect(() => {
 
     setUserId(user.id);
 
+    const email = user.email ?? "";
+
     const name =
       user.user_metadata?.display_name ??
-      user.email?.split("@")[0] ??
+      email.split("@")[0] ??
       "";
 
     setDisplayName(name);
-    setUserEmail(user.email ?? "");
+    setUserEmail(email);
+
+    // 👇 checkUser の中に入れる
+    if (email) {
+      await supabase.from("profiles").upsert({
+        user_id: user.id,
+        email: email.toLowerCase(),
+        display_name: name,
+      });
+
+      await checkInvitations(user.id, email);
+    }
   };
 
   checkUser();
@@ -171,10 +275,23 @@ useEffect(() => {
   const fetchItems = async () => {
   if (!userId) return;
 
-  const { data, error } = await supabase
+  if (mode === "group" && !selectedGroupId.trim()) {
+    setShoppingItems([]);
+    return;
+  }
+
+  let query = supabase
     .from("shopping_items")
     .select("*")
-    .eq("user_id", userId) 
+    .eq("user_id", userId);
+
+  if (mode === "personal") {
+    query = query.is("group_id", null);
+  } else {
+    query = query.eq("group_id", selectedGroupId.trim());
+  }
+
+  const { data, error } = await query
     .order("checked", { ascending: true })
     .order("created_at", { ascending: false });
 
@@ -208,6 +325,352 @@ const fetchUserMasterItems = async () => {
 }));
 
   setUserMasterItems(formatted);
+};
+
+const fetchOwnedGroups = async (): Promise<GroupOption[]> => {
+  if (!userId) return [];
+
+  const { data: ownerGroups, error: ownerError } = await supabase
+    .from("groups")
+    .select("id, name")
+    .eq("owner_user_id", userId)
+    .order("created_at", { ascending: false });
+
+  console.log("owner groups error:", ownerError);
+  if (ownerError) {
+    console.error("ownerグループ取得エラー:", ownerError);
+    return [];
+  }
+
+  console.log("owner groups:", ownerGroups);
+
+  const { data: memberships, error: membershipError } = await supabase
+    .from("group_members")
+    .select("group_id")
+    .eq("user_id", userId);
+
+  console.log("group memberships error:", membershipError);
+  if (membershipError) {
+    console.error("group_members取得エラー:", membershipError);
+    return [];
+  }
+
+  console.log("group memberships:", memberships);
+
+  const memberGroupIds = Array.from(
+    new Set((memberships || []).map((row) => row.group_id).filter(Boolean))
+  ) as string[];
+
+  let memberGroups: GroupOption[] = [];
+  if (memberGroupIds.length > 0) {
+    const { data: memberGroupsData, error: memberGroupsError } = await supabase
+      .from("groups")
+      .select("id, name")
+      .in("id", memberGroupIds)
+      .order("created_at", { ascending: false });
+
+    console.log("member groups error:", memberGroupsError);
+    if (memberGroupsError) {
+      console.error("所属グループ詳細取得エラー:", memberGroupsError);
+      return [];
+    }
+
+    memberGroups = (memberGroupsData || []) as GroupOption[];
+  }
+
+  console.log("member groups:", memberGroups);
+
+  const mergedGroups = Array.from(
+    new Map([...(ownerGroups || []), ...memberGroups].map((g) => [g.id, g])).values()
+  );
+
+  console.log("dropdown groups (merged):", mergedGroups);
+
+  setOwnedGroups(mergedGroups);
+  setSelectedGroupId((prev) => {
+    if (prev && mergedGroups.some((group) => group.id === prev)) return prev;
+    return mergedGroups[0]?.id || "";
+  });
+
+  return mergedGroups;
+};
+
+const createSharedGroup = async () => {
+  if (!userId) {
+    alert("ログイン情報を取得できませんでした");
+    return;
+  }
+
+  const trimmedGroupName = newGroupName.trim();
+  if (!trimmedGroupName) {
+    alert("グループ名を入力してください");
+    return;
+  }
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    alert("ログイン情報を取得できませんでした");
+    return;
+  }
+
+  const groupInsertPayload = {
+    name: newGroupName,
+    owner_user_id: user.id,
+    is_personal: false,
+  };
+
+  console.log("createSharedGroup user:", user);
+  console.log("createSharedGroup user.id:", user.id);
+  console.log("createSharedGroup groups insert payload:", groupInsertPayload);
+
+  const { data: createdGroup, error: createGroupError } = await supabase
+    .from("groups")
+    .insert([groupInsertPayload])
+    .select("id, name")
+    .single();
+
+  if (createGroupError || !createdGroup) {
+    console.error("共有グループ作成エラー:", createGroupError);
+    alert(`共有リストの作成に失敗しました: ${createGroupError?.message ?? "unknown error"}`);
+    return;
+  }
+
+  const { error: memberInsertError } = await supabase
+    .from("group_members")
+    .insert([
+      {
+        group_id: createdGroup.id,
+        user_id: userId,
+        role: "owner",
+      },
+    ]);
+
+  if (memberInsertError) {
+    console.error("group_members登録エラー:", memberInsertError);
+    alert(`メンバー登録に失敗しました: ${memberInsertError.message}`);
+    return;
+  }
+
+  await fetchOwnedGroups();
+  setSelectedGroupId(createdGroup.id);
+  setMode("group");
+  setNewGroupName("");
+};
+
+const updateSharedGroupName = async () => {
+  if (!selectedGroupId) {
+    alert("共有リストを選択してください");
+    return;
+  }
+
+  const trimmedName = editGroupName.trim();
+  if (!trimmedName) {
+    alert("共有リスト名を入力してください");
+    return;
+  }
+
+  const { error } = await supabase
+    .from("groups")
+    .update({ name: editGroupName })
+    .eq("id", selectedGroupId);
+
+  if (error) {
+    console.error("共有リスト名更新エラー:", error);
+    alert(`共有リスト名の更新に失敗しました: ${error.message}`);
+    return;
+  }
+
+  const currentGroupId = selectedGroupId;
+  const updatedGroups = await fetchOwnedGroups();
+  console.log("after update selectedGroupId:", currentGroupId);
+  console.log("after update groups:", updatedGroups);
+  setSelectedGroupId(currentGroupId);
+};
+
+const addGroupMember = async () => {
+  if (!selectedGroupId) {
+    alert("共有リストを選択してください");
+    return;
+  }
+
+  const email = inviteEmail.trim().toLowerCase();
+
+  if (!email) {
+    setInviteMessage("メールアドレスを入力してください");
+    return;
+  }
+
+  // 👇 single → maybeSingle に変更（ここ重要）
+  const { data: profile, error: profileError } = await supabase
+    .from("profiles")
+    .select("user_id, display_name, email")
+    .ilike("email", email)
+    .maybeSingle();
+
+  if (profileError) {
+    console.error("プロフィール検索エラー:", profileError);
+    setInviteMessage("検索中にエラーが発生しました");
+    return;
+  }
+
+  // =========================
+  // ① 既存ユーザー
+  // =========================
+  if (profile) {
+    const { error } = await supabase
+      .from("group_members")
+      .insert([
+        {
+          group_id: selectedGroupId,
+          user_id: profile.user_id,
+          role: "member",
+        },
+      ]);
+
+    if (error) {
+      if (error.code === "23505") {
+        setInviteMessage("このユーザーはすでにメンバーです");
+      } else {
+        console.error(error);
+        setInviteMessage("メンバー追加に失敗しました");
+      }
+      return;
+    }
+
+    setInviteMessage(
+      `${profile.display_name ?? profile.email?.split("@")[0]} さんを追加しました`
+    );
+
+    await fetchGroupMembers();
+  } else {
+    // =========================
+    // ② 未登録ユーザー → 招待
+    // =========================
+
+    const { error } = await supabase.from("invitations").insert([
+      {
+        email: email,
+        group_id: selectedGroupId,
+        invited_by: userId,
+      },
+    ]);
+
+    if (error) {
+      console.error("招待エラー:", error);
+      setInviteMessage("招待に失敗しました");
+      return;
+    }
+
+    setInviteMessage("招待を送りました（登録後に参加できます）");
+  }
+
+  setInviteEmail("");
+};
+
+const fetchGroupMembers = async () => {
+  if (!selectedGroupId) return;
+
+  const { data: membersData, error: membersError } = await supabase
+    .from("group_members")
+    .select("user_id, role")
+    .eq("group_id", selectedGroupId)
+    .order("created_at", { ascending: true });
+
+  if (membersError && membersError.message) {
+    console.error("グループメンバー取得エラー:", membersError);
+    return;
+  }
+
+  const userIds = (membersData || []).map((m) => m.user_id);
+
+  const { data: profilesData } = await supabase
+    .from("profiles")
+    .select("user_id, display_name, email")
+    .in("user_id", userIds);
+
+  const formatted = (membersData || []).map((m: any) => {
+    const profile = profilesData?.find((p) => p.user_id === m.user_id);
+
+    const name =
+      profile?.display_name ??
+      profile?.email?.split("@")[0] ??
+      `${m.user_id.slice(0, 8)}...`;
+
+    return {
+      user_id: m.user_id,
+      role: m.role,
+      display_name: name,
+    };
+  });
+
+  setGroupMembers(formatted);
+};
+
+const removeGroupMember = async (targetUserId: string, role: string) => {
+  if (!selectedGroupId) {
+    alert("共有リストを選択してください");
+    return;
+  }
+
+  if (role !== "member") {
+    alert("ownerは削除できません");
+    return;
+  }
+
+  const ok = window.confirm("このメンバーを共有リストから削除しますか？");
+  if (!ok) return;
+
+  const { data, error } = await supabase
+  .from("group_members")
+  .delete()
+  .eq("group_id", selectedGroupId)
+  .eq("user_id", targetUserId)
+  .select();
+
+console.log("削除されたメンバー:", data);
+
+  if (error) {
+    console.error("メンバー削除エラー:", error);
+    alert(`メンバー削除に失敗しました: ${error.message}`);
+    return;
+  }
+
+  if (!data || data.length === 0) {
+    alert("削除対象が見つからないか、削除権限がありません");
+    return;
+  }
+
+  await fetchGroupMembers();
+};
+
+const deleteSharedGroup = async () => {
+  if (!selectedGroupId) {
+    alert("共有リストを選択してください");
+    return;
+  }
+
+  const ok = window.confirm(
+    "この共有リストを削除しますか？共有リストのメンバー情報も削除されます。"
+  );
+  if (!ok) return;
+
+  const { error } = await supabase
+    .from("groups")
+    .delete()
+    .eq("id", selectedGroupId);
+
+  if (error) {
+    console.error("共有リスト削除エラー:", error);
+    alert(`共有リストの削除に失敗しました: ${error.message}`);
+    return;
+  }
+
+  setSelectedGroupId("");
+  setGroupMembers([]);
+  await fetchOwnedGroups();
 };
 
 const allItems = [...candidateItems, ...userMasterItems];
@@ -255,6 +718,14 @@ const filteredItems = candidateItems.filter((item) => {
 
   const trimmedName = item.name.trim();
   if (!trimmedName) return;
+
+  const groupIdToSave =
+    mode === "group" ? selectedGroupId.trim() || null : null;
+
+  if (mode === "group" && !groupIdToSave) {
+    alert("共有リストのgroup_idを入力してください");
+    return;
+  }
 
   const alreadyExists = shoppingItems.some(
     (shoppingItem) =>
@@ -307,6 +778,7 @@ if (matchedUserMaster?.category) {
       category: categoryToSave,
       note: item.note,
       checked: false,
+      group_id: mode === "group" ? selectedGroupId.trim() : null,
       image_url: item.image_url ?? "🛒",
     },
   ])
@@ -575,6 +1047,194 @@ await supabase
   </p>
 </header>
 
+<section className="mb-4 space-y-4">
+
+{/* 表示モード */}
+<div className="rounded-2xl bg-white p-4 shadow-sm ring-1 ring-neutral-200">
+  <p className="mb-2 text-sm font-medium text-neutral-700">
+    表示モード
+  </p>
+
+  <div className="flex flex-wrap items-center gap-2">
+    <button
+      type="button"
+      onClick={() => setMode("personal")}
+      className={`rounded-lg px-3 py-2 text-sm ${
+        mode === "personal"
+          ? "bg-lime-500 text-white"
+          : "bg-neutral-200 text-neutral-700"
+      }`}
+    >
+      個人リスト
+    </button>
+
+    <button
+      type="button"
+      onClick={() => setMode("group")}
+      className={`rounded-lg px-3 py-2 text-sm ${
+        mode === "group"
+          ? "bg-blue-500 text-white"
+          : "bg-neutral-200 text-neutral-700"
+      }`}
+    >
+      共有リスト
+    </button>
+
+    {mode === "group" && (
+      <select
+        value={selectedGroupId}
+        onChange={(e) => setSelectedGroupId(e.target.value)}
+        className="min-w-56 rounded-lg border border-neutral-300 px-3 py-2 text-sm text-gray-800"
+      >
+        <option value="">グループを選択</option>
+        {ownedGroups.map((group) => (
+          <option key={group.id} value={group.id}>
+            {group.name}
+          </option>
+        ))}
+      </select>
+    )}
+  </div>
+</div>
+
+{/* 共有管理 */}
+{mode === "group" && (
+  <div className="rounded-2xl bg-white p-4 shadow-sm ring-1 ring-neutral-200">
+    <button
+      type="button"
+      onClick={() => setIsShareManageOpen(!isShareManageOpen)}
+      className="flex w-full items-center justify-between text-left"
+    >
+      <span className="text-xl font-bold text-neutral-800">
+        共有リスト管理 ⚙️
+      </span>
+      <span className="text-sm text-neutral-500">
+        {isShareManageOpen ? "閉じる ▲" : "開く ▼"}
+      </span>
+    </button>
+
+    {isShareManageOpen && (
+      <div className="mt-4 space-y-4">
+        {/* 新規作成 */}
+        <div className="rounded-2xl bg-neutral-50 p-4 ring-1 ring-neutral-200">
+          <h3 className="mb-3 text-sm font-semibold text-neutral-700">新規作成</h3>
+          <div className="flex flex-wrap gap-2">
+            <input
+              type="text"
+              value={newGroupName}
+              onChange={(e) => setNewGroupName(e.target.value)}
+              placeholder="新しい共有リスト名"
+              className="min-w-56 flex-1 rounded-xl border border-neutral-300 px-3 py-2 text-base text-gray-800 outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
+            />
+            <button type="button" onClick={createSharedGroup} className="rounded-xl bg-blue-500 px-4 py-2 text-sm text-white shadow-sm hover:bg-blue-600">
+              作成
+            </button>
+          </div>
+        </div>
+
+        {/* リスト名 */}
+        <div className="rounded-2xl bg-neutral-50 p-4 ring-1 ring-neutral-200">
+          <h3 className="mb-3 text-sm font-semibold text-neutral-700">リスト名</h3>
+          <div className="flex flex-wrap gap-2">
+            <input
+              type="text"
+              value={editGroupName}
+              onChange={(e) => setEditGroupName(e.target.value)}
+              placeholder="共有リスト名"
+              className="min-w-56 flex-1 rounded-xl border border-neutral-300 px-3 py-2 text-base text-gray-800 outline-none focus:border-emerald-400 focus:ring-2 focus:ring-emerald-100"
+            />
+            <button
+  type="button"
+  onClick={updateSharedGroupName}
+  className={successBtn}
+>
+  更新
+</button>
+            {isCurrentUserOwner && (
+  <button
+  type="button"
+  onClick={deleteSharedGroup}
+  className={dangerBtn}
+>
+  削除
+</button>
+)}
+          </div>
+        </div>
+
+        {/* メンバー追加 */}
+        <div className="rounded-2xl bg-neutral-50 p-4 ring-1 ring-neutral-200">
+          <h3 className="mb-3 text-sm font-semibold text-neutral-700">メンバー追加</h3>
+          <div className="flex flex-wrap gap-2">
+          <input
+  type="email"
+  value={inviteEmail}
+  onChange={(e) => setInviteEmail(e.target.value)}
+  placeholder="メールアドレスを入力"
+  className="flex-1 rounded-xl border border-neutral-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
+/>
+            <button type="button" onClick={addGroupMember} className="rounded-xl bg-blue-500 px-4 py-2 text-sm text-white shadow-sm hover:bg-blue-600">
+              追加
+            </button>
+          </div>
+        </div>
+
+        {/* メンバー */}
+        <div className="rounded-2xl bg-neutral-50 p-4 ring-1 ring-neutral-200">
+          <h3 className="mb-3 text-sm font-semibold text-neutral-700">
+            メンバー（{groupMembers.length}）
+          </h3>
+
+          {groupMembers.length === 0 ? (
+            <p className="text-sm text-neutral-500">メンバーがいません</p>
+          ) : (
+            <ul className="space-y-2">
+              {groupMembers.map((member) => (
+                <li
+                  key={`${member.user_id}-${member.role}`}
+                  className="flex items-center justify-between gap-3 rounded-xl bg-white px-3 py-3 text-sm text-neutral-700 shadow-sm ring-1 ring-neutral-200"
+                >
+                  <div className="flex flex-wrap items-center gap-2">
+                    <span>{member.role === "owner" ? "👑" : "👤"}</span>
+                    <span>{member.display_name ?? member.user_id}</span>
+
+                    {member.user_id === userId && (
+                      <span className="rounded-full bg-blue-100 px-2 py-0.5 text-xs text-blue-600">
+                        あなた
+                      </span>
+                    )}
+                  </div>
+
+                  {isCurrentUserOwner && member.role === "member" && member.user_id !== userId && (
+  <button
+    type="button"
+    onClick={() => removeGroupMember(member.user_id, member.role)}
+    className="text-xs text-red-500 hover:underline"
+  >
+    削除
+  </button>
+)}
+
+{!isCurrentUserOwner && member.user_id === userId && member.role === "member" && (
+  <button
+    type="button"
+    onClick={() => removeGroupMember(member.user_id, member.role)}
+    className="text-xs text-gray-500 hover:underline"
+  >
+    退出
+  </button>
+)}
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+      </div>
+    )}
+  </div>
+)}
+</section>
+
         <div className="mb-4 flex justify-end">
   <button
     onClick={deleteCheckedItems}
@@ -725,9 +1385,9 @@ await supabase
           {items.map((item) => (
             <div
               key={item.id}
-              className={`flex items-center justify-between rounded-xl border p-3 transition ${
+              className={`flex items-center justify-between rounded-xl border p-3 transition-all duration-300 ease-out motion-reduce:transition-none ${
   item.checked
-    ? "border-gray-200 bg-gray-100"
+    ? "border-gray-200 bg-gray-100 scale-[0.99]"
     : "border-neutral-100 bg-white"
 }`}
             >
@@ -784,8 +1444,10 @@ await supabase
                     />
 
                     <div
-  className={`flex h-10 w-10 items-center justify-center rounded-xl text-xl ${
-    item.checked ? "bg-gray-100 opacity-50" : "bg-lime-50"
+  className={`flex h-10 w-10 items-center justify-center rounded-xl text-xl transition-all duration-300 ease-out motion-reduce:transition-none ${
+    item.checked
+      ? "bg-gray-100 opacity-50 scale-95"
+      : "bg-lime-50 scale-100"
   }`}
 >
   {item.image_url?.startsWith("http") ? (
@@ -800,7 +1462,7 @@ await supabase
 
                     <div>
                       <p
-                        className={`text-sm font-medium ${
+                        className={`text-sm font-medium transition-all duration-300 ease-out motion-reduce:transition-none ${
                           item.checked
                             ? "text-neutral-400 line-through opacity-60"
                             : "text-gray-800"

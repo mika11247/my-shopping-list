@@ -58,10 +58,21 @@ export default function ProfilePage() {
           .eq("user_id", user.id),
       ]);
 
-    setShoppingCount(shopping ?? 0);
-    setMasterCount(master ?? 0);
-    setHistoryCount(history ?? 0);
-    setLoading(false);
+      setShoppingCount(shopping ?? 0);
+      setMasterCount(master ?? 0);
+      setHistoryCount(history ?? 0);
+       
+      if (user) {
+        await supabase.from("profiles").upsert({
+          user_id: user.id,
+          display_name:
+            user.user_metadata?.display_name ??
+            user.email?.split("@")[0],
+          email: user.email,
+        });
+      }
+      
+      setLoading(false);
   };
 
   const updateDisplayName = async () => {
@@ -77,6 +88,18 @@ export default function ProfilePage() {
         display_name: trimmedName,
       },
     });
+
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+    
+    if (user) {
+      await supabase.from("profiles").upsert({
+        user_id: user.id,
+        display_name: trimmedName,
+        email: user.email,
+      });
+    }
 
     if (error) {
       setMessage("表示名の更新に失敗しました");
