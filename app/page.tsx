@@ -494,86 +494,6 @@ const updateSharedGroupName = async () => {
   setSelectedGroupId(currentGroupId);
 };
 
-const addGroupMember = async () => {
-  if (!selectedGroupId) {
-    alert("共有リストを選択してください");
-    return;
-  }
-
-  const email = inviteEmail.trim().toLowerCase();
-
-  if (!email) {
-    setInviteMessage("メールアドレスを入力してください");
-    return;
-  }
-
-  // 👇 single → maybeSingle に変更（ここ重要）
-  const { data: profile, error: profileError } = await supabase
-    .from("profiles")
-    .select("user_id, display_name, email")
-    .ilike("email", email)
-    .maybeSingle();
-
-  if (profileError) {
-    console.error("プロフィール検索エラー:", profileError);
-    setInviteMessage("検索中にエラーが発生しました");
-    return;
-  }
-
-  // =========================
-  // ① 既存ユーザー
-  // =========================
-  if (profile) {
-    const { error } = await supabase
-      .from("group_members")
-      .insert([
-        {
-          group_id: selectedGroupId,
-          user_id: profile.user_id,
-          role: "member",
-        },
-      ]);
-
-    if (error) {
-      if (error.code === "23505") {
-        setInviteMessage("このユーザーはすでにメンバーです");
-      } else {
-        console.error(error);
-        setInviteMessage("メンバー追加に失敗しました");
-      }
-      return;
-    }
-
-    setInviteMessage(
-      `${profile.display_name ?? profile.email?.split("@")[0]} さんを追加しました`
-    );
-
-    await fetchGroupMembers();
-  } else {
-    // =========================
-    // ② 未登録ユーザー → 招待
-    // =========================
-
-    const { error } = await supabase.from("invitations").insert([
-      {
-        email: email,
-        group_id: selectedGroupId,
-        invited_by: userId,
-      },
-    ]);
-
-    if (error) {
-      console.error("招待エラー:", error);
-      setInviteMessage("招待に失敗しました");
-      return;
-    }
-
-    setInviteMessage("招待しました！相手がこのアプリに登録すると自動で参加します");
-  }
-
-  setInviteEmail("");
-};
-
 const fetchGroupMembers = async () => {
   if (!selectedGroupId) return;
 
@@ -583,7 +503,7 @@ const fetchGroupMembers = async () => {
     .eq("group_id", selectedGroupId)
     .order("created_at", { ascending: true });
 
-  if (membersError && membersError.message) {
+  if (membersError) {
     console.error("グループメンバー取得エラー:", membersError);
     return;
   }
@@ -611,6 +531,101 @@ const fetchGroupMembers = async () => {
   });
 
   setGroupMembers(formatted);
+};
+
+const fetchPendingInvitations = async () => {
+  if (!selectedGroupId) return;
+
+  const { data, error } = await supabase
+    .from("invitations")
+    .select("id, email, status, created_at")
+    .eq("group_id", selectedGroupId)
+    .eq("status", "pending")
+    .order("created_at", { ascending: false });
+
+  if (error) {
+    console.error("招待一覧取得エラー:", error);
+    return;
+  }
+
+  setPendingInvitations(data || []);
+};
+
+const addGroupMember = async () => {
+  if (!selectedGroupId) {
+    alert("共有リストを選択してください");
+    return;
+  }
+
+  const email = inviteEmail.trim().toLowerCase();
+
+  if (!email) {
+    setInviteMessage("メールアドレスを入力してください");
+    return;
+  }
+
+  const { data: profile, error: profileError } = await supabase
+    .from("profiles")
+    .select("user_id, display_name, email")
+    .ilike("email", email)
+    .maybeSingle();
+
+  if (profileError) {
+    console.error("プロフィール検索エラー:", profileError);
+    setInviteMessage("検索中にエラーが発生しました");
+    return;
+  }
+
+  if (profile) {
+    const { error } = await supabase.from("group_members").insert([
+      {
+        group_id: selectedGroupId,
+        user_id: profile.user_id,
+        role: "member",
+      },
+    ]);
+
+    if (error) {
+      console.error("メンバー追加エラー:", error);
+
+      if (error.code === "23505") {
+        setInviteMessage("このユーザーはすでにメンバーです");
+      } else {
+        setInviteMessage(`メンバー追加に失敗しました: ${error.message}`);
+      }
+
+      return;
+    }
+
+    setInviteMessage(
+      `${profile.display_name ?? profile.email?.split("@")[0] ?? "メンバー"}さんを追加しました`
+    );
+
+    await fetchGroupMembers();
+  } else {
+    const { error } = await supabase.from("invitations").insert([
+      {
+        email,
+        group_id: selectedGroupId,
+        invited_by: userId,
+        status: "pending",
+      },
+    ]);
+
+    if (error) {
+      console.error("招待エラー:", error);
+      setInviteMessage(`招待に失敗しました: ${error.message}`);
+      return;
+    }
+
+    setInviteMessage(
+      "招待しました！相手がこのアプリに登録すると自動で参加します"
+    );
+
+    await fetchPendingInvitations();
+  }
+
+  setInviteEmail("");
 };
 
 const removeGroupMember = async (targetUserId: string, role: string) => {
