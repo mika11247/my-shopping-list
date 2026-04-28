@@ -80,9 +80,13 @@ export default function Home() {
   const [userMasterItems, setUserMasterItems] = useState<CandidateItem[]>([]);
   const [displayName, setDisplayName] = useState("");
 
+  const [pendingInvitations, setPendingInvitations] = useState<any[]>([]);
+
   const [isShareManageOpen, setIsShareManageOpen] = useState(false);
   const [inviteEmail, setInviteEmail] = useState("");
 const [inviteMessage, setInviteMessage] = useState("");
+
+const appUrl = "https://https://my-shopping-list-vxll.vercel.app";
 
 const primaryBtn =
   "rounded-xl px-4 py-2 text-sm font-semibold text-white bg-blue-500 hover:bg-blue-600";
@@ -564,7 +568,7 @@ const addGroupMember = async () => {
       return;
     }
 
-    setInviteMessage("招待を送りました（登録後に参加できます）");
+    setInviteMessage("招待しました！相手がこのアプリに登録すると自動で参加します");
   }
 
   setInviteEmail("");
@@ -1176,6 +1180,15 @@ await supabase
             <button type="button" onClick={addGroupMember} className="rounded-xl bg-blue-500 px-4 py-2 text-sm text-white shadow-sm hover:bg-blue-600">
               追加
             </button>
+
+            <div className="mt-3 rounded-xl bg-blue-50 p-3 text-xs text-blue-700">
+  <p className="font-semibold">共有用リンク</p>
+  <p className="mt-1 break-all">{appUrl}</p>
+  <p className="mt-1 text-blue-600">
+    このリンクをLINEなどで送って、同じメールアドレスで登録してもらってください。
+  </p>
+</div>
+
           </div>
         </div>
 
@@ -1228,6 +1241,29 @@ await supabase
               ))}
             </ul>
           )}
+
+{pendingInvitations.length > 0 && (
+  <div className="mt-4 rounded-2xl bg-yellow-50 p-4 ring-1 ring-yellow-200">
+    <h3 className="mb-2 text-sm font-semibold text-yellow-800">
+      招待中
+    </h3>
+
+    <div className="space-y-2">
+      {pendingInvitations.map((invite) => (
+        <div
+          key={invite.id}
+          className="flex items-center justify-between rounded-xl bg-white px-3 py-2 text-sm text-neutral-700"
+        >
+          <span className="break-all">{invite.email}</span>
+          <span className="ml-2 shrink-0 rounded-full bg-yellow-100 px-2 py-1 text-xs text-yellow-700">
+            未参加
+          </span>
+        </div>
+      ))}
+    </div>
+  </div>
+)}
+
         </div>
       </div>
     )}
