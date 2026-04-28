@@ -103,9 +103,20 @@ function LoginContent() {
         <h1 className="mt-1 text-2xl font-bold text-neutral-900">
           {mode === "login" ? "ログイン" : "新規登録"}
         </h1>
-        <p className="mt-2 text-sm text-neutral-600">
-          夫婦で同じアカウントを使うなら、共通のメールアドレスとパスワードでOK
-        </p>
+
+        <p className="mt-4 text-center text-sm text-gray-600 leading-relaxed">
+  買い物を、もっとシンプルに。<br /><br />
+
+  ・アイテムをかんたん追加<br />
+  ・家族とリアルタイムで共有<br />
+  ・スマホでいつでもチェック<br /><br />
+
+  家族やパートナーと使う場合は、<br />
+  それぞれのアカウントを作成して、<br />
+  共有リストで一緒に管理できます
+</p>
+
+<hr className="my-6 border-neutral-200" />
 
         {isWithdraw && (
           <div className="mb-4 rounded-2xl bg-green-50 px-4 py-3 text-sm font-bold text-green-600 ring-1 ring-green-200">
