@@ -86,7 +86,7 @@ export default function Home() {
   const [inviteEmail, setInviteEmail] = useState("");
 const [inviteMessage, setInviteMessage] = useState("");
 
-const appUrl = "https://https://my-shopping-list-vxll.vercel.app";
+const appUrl = "https://my-shopping-list-vxll.vercel.app";
 
 const primaryBtn =
   "rounded-xl px-4 py-2 text-sm font-semibold text-white bg-blue-500 hover:bg-blue-600";
@@ -171,10 +171,12 @@ useEffect(() => {
 useEffect(() => {
   if (mode !== "group" || !selectedGroupId) {
     setGroupMembers([]);
+    setPendingInvitations([]); // ←追加
     return;
   }
 
   fetchGroupMembers();
+  fetchPendingInvitations(); // ←これ追加🔥
 }, [mode, selectedGroupId]);
 
 useEffect(() => {
