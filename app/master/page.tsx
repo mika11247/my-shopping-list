@@ -254,123 +254,112 @@ setNewCategory("その他");
           <ul className="space-y-2">
             {items.map((item) => (
               <li
-                key={item.id}
-                className="flex items-center justify-between gap-2 rounded-2xl border border-pink-100 bg-pink-50 px-3 py-2"
-              >
-                {editingId === item.id ? (
-                  <div className="flex flex-1 flex-col gap-2">
-                    <input
-                      value={editName}
-                      onChange={(e) => setEditName(e.target.value)}
-                      onKeyDown={(e) => {
-                        if (e.key === "Enter" && editName.trim() !== "") {
-                         updateMasterItem(
-                         item.id,
-                         editName.trim(),
-                         editYomi.trim(),
-                         editCategory
-                         ); 
-                        }
-                      }}
-                      className="rounded-xl border border-pink-200 bg-white px-3 py-1 text-base text-gray-800 outline-none"
-                      autoFocus
-                    />
-                    <input
-  value={editYomi}
-  onChange={(e) => setEditYomi(e.target.value)}
-  placeholder="よみ（ひらがな・空欄OK）"
-  className="rounded-xl border border-pink-200 bg-white px-3 py-1 text-base text-gray-800"
-/>
-
-                    <select
-                      value={editCategory}
-                      onChange={(e) => setEditCategory(e.target.value)}
-                      className="rounded-xl border border-pink-200 bg-white px-3 py-1 text-base text-gray-800"
-                    >
-                      {categories.map((cat) => (
-                        <option key={cat} value={cat}>
-                          {cat}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                ) : (
-                  <div className="flex flex-1 flex-col">
-                    <span className="text-gray-800">{item.name}</span>
-                    <span className="text-xs text-gray-500">
-  {item.yomi ? `${item.yomi} / ` : ""}
-  {item.category ?? "その他"}
-</span>
-                  </div>
-                )}
-
-                <div className="flex gap-2">
-  {editingId === item.id ? (
-    <>
-      <button
-  type="button"
-  onClick={() => {
-    console.log("💾 保存:", {
-      name: editName,
-      yomi: editYomi,
-      category: editCategory,
-    });
-
-    if (editName.trim() !== "") {
-      setTimeout(() => {
-        updateMasterItem(
-          item.id,
-          editName.trim(),
-          editYomi.trim(),
-          editCategory
-        );
-      }, 0);
-    }
-  }}
-  className="rounded-full bg-white px-3 py-1 text-xs text-green-600 shadow"
+  key={item.id}
+  className="rounded-2xl bg-pink-50 p-4 shadow-sm ring-1 ring-pink-100"
 >
-  保存
-</button>
+  <div className="flex flex-col gap-3">
+    {editingId === item.id ? (
+      <>
+        <div className="flex flex-col gap-2">
+          <input
+            value={editName}
+            onChange={(e) => setEditName(e.target.value)}
+            className="rounded-xl border border-pink-200 bg-white px-3 py-2 text-base text-gray-800 placeholder:text-gray-400"
+            placeholder="アイテム名"
+          />
 
-      {/* 👇これ追加🔥 */}
-      <button
-  onClick={() => {
-    setEditingId(null);
-    setEditName("");
-    setEditYomi("");
-    setEditCategory("その他");
-  }}
-  className="rounded-full bg-gray-100 px-3 py-1 text-xs text-gray-600 shadow ring-1 ring-gray-200 hover:bg-gray-200"
->
-  キャンセル
-</button>
-</>
-) : (
-<button
-  onClick={() => {
-    setEditingId(item.id);
-    setEditName(item.name);
-    setEditYomi(item.yomi ?? "");
-    setEditCategory(item.category ?? "その他");
-  }}
-  className="rounded-full bg-pink-100 px-3 py-1 text-xs text-pink-600 shadow ring-1 ring-pink-200 hover:bg-pink-200"
->
-  編集
-</button>
-)}
+          <input
+            value={editYomi}
+            onChange={(e) => setEditYomi(e.target.value)}
+            className="rounded-xl border border-pink-200 bg-white px-3 py-2 text-base text-gray-800 placeholder:text-gray-400"
+            placeholder="よみ"
+          />
 
-<button
-  onClick={() => {
-    if (confirm(`「${item.name}」を削除していい？`)) {
-      deleteMasterItem(item.id);
-    }
-  }}
-  className="rounded-full bg-red-100 px-3 py-1 text-xs text-red-600 shadow ring-1 ring-red-200 hover:bg-red-200"
->
-  削除
-</button>
-</div>
-              </li>
+          <select
+            value={editCategory}
+            onChange={(e) => setEditCategory(e.target.value)}
+            className="rounded-xl border border-pink-200 bg-white px-3 py-2 text-base text-gray-800"
+          >
+            {categories.map((cat) => (
+              <option key={cat} value={cat}>
+                {cat}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        <div className="mt-2 flex justify-end gap-2">
+          <button
+            onClick={() =>
+              updateMasterItem(item.id, editName, editYomi, editCategory)
+            }
+            className="min-w-[60px] rounded-full bg-green-100 px-3 py-1 text-xs font-medium text-green-600 shadow ring-1 ring-green-200 hover:bg-green-200"
+          >
+            保存
+          </button>
+
+          <button
+            onClick={() => {
+              setEditingId(null);
+              setEditName("");
+              setEditYomi("");
+              setEditCategory("その他");
+            }}
+            className="min-w-[60px] rounded-full bg-gray-100 px-3 py-1 text-xs font-medium text-gray-600 shadow ring-1 ring-gray-200 hover:bg-gray-200"
+          >
+            キャンセル
+          </button>
+
+          <button
+            onClick={() => {
+              if (confirm(`「${item.name}」を削除していい？`)) {
+                deleteMasterItem(item.id);
+              }
+            }}
+            className="min-w-[60px] rounded-full bg-red-100 px-3 py-1 text-xs font-medium text-red-600 shadow ring-1 ring-red-200 hover:bg-red-200"
+          >
+            削除
+          </button>
+        </div>
+      </>
+    ) : (
+      <div className="flex items-center justify-between gap-3">
+        <div className="flex flex-1 flex-col">
+          <span className="text-gray-800">{item.name}</span>
+          <span className="text-xs text-gray-500">
+            {item.yomi ? `${item.yomi} / ` : ""}
+            {item.category ?? "その他"}
+          </span>
+        </div>
+
+        <div className="flex gap-2">
+          <button
+            onClick={() => {
+              setEditingId(item.id);
+              setEditName(item.name);
+              setEditYomi(item.yomi ?? "");
+              setEditCategory(item.category ?? "その他");
+            }}
+            className="rounded-full bg-pink-100 px-3 py-1 text-xs text-pink-600 shadow ring-1 ring-pink-200 hover:bg-pink-200"
+          >
+            編集
+          </button>
+
+          <button
+            onClick={() => {
+              if (confirm(`「${item.name}」を削除していい？`)) {
+                deleteMasterItem(item.id);
+              }
+            }}
+            className="rounded-full bg-red-100 px-3 py-1 text-xs text-red-600 shadow ring-1 ring-red-200 hover:bg-red-200"
+          >
+            削除
+          </button>
+        </div>
+      </div>
+    )}
+  </div>
+</li>
             ))}
           </ul>
         )}
