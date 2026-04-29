@@ -615,26 +615,38 @@ const addGroupMember = async () => {
 
     await fetchGroupMembers();
   } else {
-    const { error } = await supabase.from("invitations").insert([
+    
+    const { data: invite, error } = await supabase
+    .from("invitations")
+    .insert([
       {
         email,
         group_id: selectedGroupId,
         invited_by: userId,
         status: "pending",
       },
-    ]);
-
-    if (error) {
-      console.error("招待エラー:", error);
-      setInviteMessage(`招待に失敗しました: ${error.message}`);
-      return;
-    }
-
-    setInviteMessage(
-      "招待しました！相手がこのアプリに登録すると自動で参加します"
-    );
-
-    await fetchPendingInvitations();
+    ])
+    .select()
+    .single();
+  
+  if (error) {
+    console.error("招待エラー:", error);
+    setInviteMessage(`招待に失敗しました: ${error.message}`);
+    return;
+  }
+  
+  await supabase.functions.invoke("send-invite-email", {
+    body: {
+      email,
+      inviteId: invite.id,
+    },
+  });
+  
+  setInviteMessage(
+    "招待しました！相手に招待メールを送信しました"
+  );
+  
+  await fetchPendingInvitations();
   }
 
   setInviteEmail("");

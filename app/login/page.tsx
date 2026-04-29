@@ -25,6 +25,8 @@ function LoginContent() {
   const searchParams = useSearchParams();
   const isWithdraw = searchParams.get("withdraw");
 
+  const inviteId = searchParams.get("invite");
+
   const sendPasswordResetEmail = async () => {
     if (!email) {
       setMessage("メールアドレスを入力してください");
@@ -88,8 +90,8 @@ function LoginContent() {
           return;
         }
 
-        router.push("/");
-        router.refresh();
+        router.push(inviteId ? `/?invite=${inviteId}` : "/");
+router.refresh();
       }
     } finally {
       setLoading(false);
