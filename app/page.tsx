@@ -1297,15 +1297,12 @@ await supabase
   const inviteLink = `${window.location.origin}/login?invite=${invite.id}`;
 
   return (
-    <div
-  key={invite.id}
-  className="rounded-xl bg-white px-3 py-3 text-sm text-neutral-700"
->
-  <p className="break-all text-sm font-medium text-neutral-800">
+    <div key={invite.id} className="px-2 py-2">
+  <p className="break-all text-sm text-neutral-800">
     {invite.email}
   </p>
 
-  <div className="mt-2 flex flex-wrap items-center gap-2">
+  <div className="mt-1 flex flex-wrap items-center gap-2">
     <span className="rounded-full bg-yellow-100 px-3 py-1 text-xs text-yellow-700">
       未参加
     </span>
