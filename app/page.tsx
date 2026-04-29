@@ -648,10 +648,10 @@ const addGroupMember = async () => {
   }
   
   await supabase.functions.invoke("send-invite-email", {
-    body: {
+    body: JSON.stringify({
       email,
       inviteId: invite.id,
-    },
+    }),
   });
   
   setInviteMessage(
