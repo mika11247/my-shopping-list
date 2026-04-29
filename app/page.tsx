@@ -137,18 +137,28 @@ const checkInvitations = async (userId: string, email: string) => {
   }
 };
 
+const cancelInvitation = async (inviteId: number) => {
+  const ok = confirm("この招待をキャンセルしますか？");
+  if (!ok) return;
+
+  const { error } = await supabase
+    .from("invitations")
+    .delete()
+    .eq("id", inviteId);
+
+  if (error) {
+    console.error("招待キャンセルエラー:", error);
+    alert("招待のキャンセルに失敗しました");
+    return;
+  }
+
+  await fetchPendingInvitations();
+};
+
   const handleLogout = async () => {
   await supabase.auth.signOut();
   window.location.href = "/login";
 };
-
-useEffect(() => {
-  if (!userId) return;
-
-  fetchItems();
-  fetchCandidateItems();
-  fetchUserMasterItems(); // ←追加🔥
-}, [userId, mode, selectedGroupId]);
 
 useEffect(() => {
   if (!userId) return;
@@ -1269,12 +1279,25 @@ await supabase
       {pendingInvitations.map((invite) => (
         <div
           key={invite.id}
-          className="flex items-center justify-between rounded-xl bg-white px-3 py-2 text-sm text-neutral-700"
+          className="flex items-center justify-between gap-2 rounded-xl bg-white px-3 py-2 text-sm text-neutral-700"
         >
           <span className="break-all">{invite.email}</span>
-          <span className="ml-2 shrink-0 rounded-full bg-yellow-100 px-2 py-1 text-xs text-yellow-700">
-            未参加
-          </span>
+
+          <div className="flex shrink-0 items-center gap-2">
+            <span className="rounded-full bg-yellow-100 px-2 py-1 text-xs text-yellow-700">
+              未参加
+            </span>
+
+            {isCurrentUserOwner && (
+              <button
+                type="button"
+                onClick={() => cancelInvitation(invite.id)}
+                className="rounded-full bg-red-100 px-3 py-1 text-xs font-semibold text-red-600"
+              >
+                キャンセル
+              </button>
+            )}
+          </div>
         </div>
       ))}
     </div>
