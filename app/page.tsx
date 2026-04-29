@@ -34,6 +34,13 @@ type GroupMember = {
   display_name?: string;
 };
 
+type Invitation = {
+  id: number;
+  email: string;
+  status: string;
+  created_at: string;
+};
+
 const categories = [
   "野菜・果物",
   "肉",
@@ -80,7 +87,7 @@ export default function Home() {
   const [userMasterItems, setUserMasterItems] = useState<CandidateItem[]>([]);
   const [displayName, setDisplayName] = useState("");
 
-  const [pendingInvitations, setPendingInvitations] = useState<any[]>([]);
+  const [pendingInvitations, setPendingInvitations] = useState<Invitation[]>([]);
 
   const [isShareManageOpen, setIsShareManageOpen] = useState(false);
   const [inviteEmail, setInviteEmail] = useState("");
@@ -632,6 +639,11 @@ const addGroupMember = async () => {
   if (error) {
     console.error("招待エラー:", error);
     setInviteMessage(`招待に失敗しました: ${error.message}`);
+    return;
+  }
+
+  if (!invite?.id) {
+    console.error("inviteが不正");
     return;
   }
   
