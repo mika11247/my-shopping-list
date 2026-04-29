@@ -1269,40 +1269,45 @@ await supabase
             </ul>
           )}
 
-{pendingInvitations.length > 0 && (
-  <div className="mt-4 rounded-2xl bg-yellow-50 p-4 ring-1 ring-yellow-200">
-    <h3 className="mb-2 text-sm font-semibold text-yellow-800">
-      招待中
-    </h3>
+{pendingInvitations.map((invite) => {
+  const inviteLink = `${window.location.origin}/login?invite=${invite.id}`;
 
-    <div className="space-y-2">
-      {pendingInvitations.map((invite) => (
-        <div
-          key={invite.id}
-          className="flex items-center justify-between gap-2 rounded-xl bg-white px-3 py-2 text-sm text-neutral-700"
+  return (
+    <div
+      key={invite.id}
+      className="flex items-center justify-between gap-2 rounded-xl bg-white px-3 py-2 text-sm text-neutral-700"
+    >
+      <span className="break-all">{invite.email}</span>
+
+      <div className="flex items-center gap-2">
+        <span className="rounded-full bg-yellow-100 px-2 py-1 text-xs text-yellow-700">
+          未参加
+        </span>
+
+        {/* 👇コピー */}
+        <button
+          onClick={async () => {
+            await navigator.clipboard.writeText(inviteLink);
+            alert("招待リンクをコピーしました！");
+          }}
+          className="rounded-full bg-blue-100 px-3 py-1 text-xs font-semibold text-blue-600"
         >
-          <span className="break-all">{invite.email}</span>
+          リンクコピー
+        </button>
 
-          <div className="flex shrink-0 items-center gap-2">
-            <span className="rounded-full bg-yellow-100 px-2 py-1 text-xs text-yellow-700">
-              未参加
-            </span>
-
-            {isCurrentUserOwner && (
-              <button
-                type="button"
-                onClick={() => cancelInvitation(invite.id)}
-                className="rounded-full bg-red-100 px-3 py-1 text-xs font-semibold text-red-600"
-              >
-                キャンセル
-              </button>
-            )}
-          </div>
-        </div>
-      ))}
+        {/* 👇キャンセル */}
+        {isCurrentUserOwner && (
+          <button
+            onClick={() => cancelInvitation(invite.id)}
+            className="rounded-full bg-red-100 px-3 py-1 text-xs font-semibold text-red-600"
+          >
+            キャンセル
+          </button>
+        )}
+      </div>
     </div>
-  </div>
-)}
+  );
+})}
 
         </div>
       </div>
