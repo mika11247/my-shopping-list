@@ -10,7 +10,31 @@ Deno.serve(async (req: Request) => {
   }
 
   try {
-    const { email, inviteId } = await req.json();
+    let body: { email?: string; inviteId?: number | string } = {};
+
+try {
+  body = await req.json();
+} catch {
+  return new Response(JSON.stringify({ error: "Invalid JSON or empty body" }), {
+    status: 400,
+    headers: {
+      ...corsHeaders,
+      "Content-Type": "application/json",
+    },
+  });
+}
+
+const { email, inviteId } = body;
+
+if (!email || !inviteId) {
+  return new Response(JSON.stringify({ error: "email or inviteId is missing" }), {
+    status: 400,
+    headers: {
+      ...corsHeaders,
+      "Content-Type": "application/json",
+    },
+  });
+}
 
     const resendApiKey = Deno.env.get("RESEND_API_KEY");
 
