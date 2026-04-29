@@ -1298,38 +1298,38 @@ await supabase
 
   return (
     <div
-      key={invite.id}
-      className="flex items-center justify-between gap-2 rounded-xl bg-white px-3 py-2 text-sm text-neutral-700"
+  key={invite.id}
+  className="flex items-center justify-between gap-2 rounded-xl bg-white px-3 py-2 text-sm text-neutral-700"
+>
+  <span className="flex-1 break-all">
+    {invite.email}
+  </span>
+
+  <div className="flex shrink-0 items-center gap-2">
+    <span className="rounded-full bg-yellow-100 px-2 py-1 text-xs text-yellow-700">
+      未参加
+    </span>
+
+    <button
+      onClick={async () => {
+        await navigator.clipboard.writeText(inviteLink);
+        alert("招待リンクをコピーしました！");
+      }}
+      className="rounded-full bg-blue-100 px-2 py-1 text-xs font-semibold text-blue-600"
     >
-      <span className="break-all">{invite.email}</span>
+      コピー
+    </button>
 
-      <div className="flex items-center gap-2">
-        <span className="rounded-full bg-yellow-100 px-2 py-1 text-xs text-yellow-700">
-          未参加
-        </span>
-
-        {/* 👇コピー */}
-        <button
-          onClick={async () => {
-            await navigator.clipboard.writeText(inviteLink);
-            alert("招待リンクをコピーしました！");
-          }}
-          className="rounded-full bg-blue-100 px-3 py-1 text-xs font-semibold text-blue-600"
-        >
-          リンクコピー
-        </button>
-
-        {/* 👇キャンセル */}
-        {isCurrentUserOwner && (
-          <button
-            onClick={() => cancelInvitation(invite.id)}
-            className="rounded-full bg-red-100 px-3 py-1 text-xs font-semibold text-red-600"
-          >
-            キャンセル
-          </button>
-        )}
-      </div>
-    </div>
+    {isCurrentUserOwner && (
+      <button
+        onClick={() => cancelInvitation(invite.id)}
+        className="rounded-full bg-red-100 px-2 py-1 text-xs font-semibold text-red-600"
+      >
+        キャンセル
+      </button>
+    )}
+  </div>
+</div>
   );
 })}
 
