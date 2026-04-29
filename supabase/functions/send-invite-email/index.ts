@@ -57,7 +57,7 @@ if (!email || !inviteId) {
         Authorization: `Bearer ${resendApiKey}`,
       },
       body: JSON.stringify({
-        from: "onboarding@resend.dev",
+        from: "M.glitter <noreply@mglitter.net>",
         to: email,
         subject: "共有リストに招待されました",
         html: `

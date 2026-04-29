@@ -1219,7 +1219,7 @@ await supabase
 
         {/* メンバー追加 */}
         <div className="rounded-2xl bg-neutral-50 p-4 ring-1 ring-neutral-200">
-          <h3 className="mb-3 text-sm font-semibold text-neutral-700">メンバー追加</h3>
+          <h3 className="mb-3 text-sm font-semibold text-neutral-700">メンバー追加/招待</h3>
           <div className="flex flex-wrap gap-2">
           <input
   type="email"
@@ -1233,10 +1233,18 @@ await supabase
             </button>
 
             <div className="mt-3 rounded-xl bg-blue-50 p-3 text-xs text-blue-700">
-  <p className="font-semibold">共有用リンク</p>
-  <p className="mt-1 break-all">{appUrl}</p>
-  <p className="mt-1 text-blue-600">
-    このリンクをLINEなどで送って、同じメールアドレスで登録してもらってください。
+  <p className="font-semibold">招待について</p>
+
+  <p className="mt-1">
+    登録済みのユーザーは自動で追加されます。
+  </p>
+
+  <p className="mt-1">
+    未登録の場合は招待メールが送信され、登録後に参加できます。
+  </p>
+
+  <p className="mt-2">
+    メールが届かない場合は、招待中の「コピー」から共有してください。
   </p>
 </div>
 
