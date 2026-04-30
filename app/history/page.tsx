@@ -11,6 +11,8 @@ type DeletedItem = {
   note: string | null;
   checked: boolean | null;
   deleted_at: string;
+  group_id: string | null;
+  purchased_by_name: string | null;
 };
 
 export default function HistoryPage() {
@@ -27,29 +29,48 @@ export default function HistoryPage() {
 
   const fetchHistory = async () => {
     setLoading(true);
-
+  
     const {
       data: { user },
     } = await supabase.auth.getUser();
-
+  
     if (!user) {
       router.push("/login");
       return;
     }
-
-    const { data, error } = await supabase
+  
+    const { data: memberships } = await supabase
+      .from("group_members")
+      .select("group_id")
+      .eq("user_id", user.id);
+  
+    const groupIds = (memberships || []).map((m) => m.group_id);
+  
+    let query = supabase
       .from("deleted_items")
-      .select("id, name, category, note, checked, deleted_at")
-      .eq("user_id", user.id)
+      .select("id, name, category, note, checked, deleted_at, group_id, purchased_by_name")
       .order("deleted_at", { ascending: false })
       .limit(50);
-
+  
+    if (groupIds.length > 0) {
+      query = query.or(
+        `and(user_id.eq.${user.id},group_id.is.null),group_id.in.(${groupIds.join(",")})`
+      );
+    } else {
+      query = query
+        .eq("user_id", user.id)
+        .is("group_id", null);
+    }
+  
+    const { data, error } = await query;
+  
     if (error) {
       console.error(error);
       showToast("履歴の取得に失敗しました");
+      setLoading(false);
       return;
     }
-
+  
     setItems(data || []);
     setLoading(false);
   };
@@ -163,6 +184,12 @@ export default function HistoryPage() {
                     <p className="mt-1 text-xs text-gray-500">
                       {item.category ?? "その他"}
                     </p>
+
+                    {item.purchased_by_name && (
+  <p className="mt-1 text-xs text-sky-500">
+    {item.purchased_by_name}さんが購入
+  </p>
+)}
 
                     {item.note && (
                       <p className="mt-1 text-xs text-gray-400">

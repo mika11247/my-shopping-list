@@ -978,6 +978,8 @@ const deleteCheckedItems = async () => {
 
   const historyData = checkedItems.map((item) => ({
     user_id: userId,
+    group_id: item.group_id ?? null,
+    purchased_by_name: displayName || userEmail.split("@")[0] || "だれか",
     name: item.name,
     category: item.category,
     note: item.note ?? "",
