@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/lib/supabase";
 import { useRouter } from "next/navigation";
 import { categories } from "@/lib/categories";
+import { getLimitByPlan } from "@/lib/planLimits";
 
 type ShoppingItem = {
   id: number;
@@ -81,6 +82,8 @@ const [isModeLoaded, setIsModeLoaded] = useState(false);
 
 const [userRole, setUserRole] = useState<"admin" | "user">("user");
 const [userPlan, setUserPlan] = useState<string>("free");
+const [groupOwnerPlan, setGroupOwnerPlan] = useState<string>("free");
+const [groupOwnerRole, setGroupOwnerRole] = useState<"admin" | "user">("user");
 
 const appUrl = "https://my-shopping-list-vxll.vercel.app";
 
@@ -212,6 +215,38 @@ useEffect(() => {
   fetchPendingInvitations(); // ←これ追加🔥
 }, [mode, selectedGroupId]);
 
+const fetchGroupOwnerPlan = async () => {
+  if (!selectedGroupId) return;
+
+  // owner取得
+  const { data: ownerMember } = await supabase
+    .from("group_members")
+    .select("user_id")
+    .eq("group_id", selectedGroupId)
+    .eq("role", "owner")
+    .single();
+
+  if (!ownerMember) return;
+
+  // ownerのplan取得
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("plan, role")
+    .eq("user_id", ownerMember.user_id)
+    .single();
+
+  if (profile) {
+    setGroupOwnerPlan(profile.plan ?? "free");
+    setGroupOwnerRole(profile.role ?? "user");
+  }
+};
+
+useEffect(() => {
+  if (mode === "group" && selectedGroupId) {
+    fetchGroupOwnerPlan();
+  }
+}, [mode, selectedGroupId]);
+
 useEffect(() => {
   const checkUser = async () => {
     const {
@@ -261,14 +296,20 @@ useEffect(() => {
   checkUser();
 }, [router]);
 
+const currentRole = mode === "group" ? groupOwnerRole : userRole;
+const currentPlan = mode === "group" ? groupOwnerPlan : userPlan;
+
+const listLimit =
+  mode === "group"
+    ? getLimitByPlan(groupOwnerRole, groupOwnerPlan, "list")
+    : getLimitByPlan(userRole, userPlan, "list");
+
 const memoLimit =
-  userRole === "admin" ? 9999 :
-  userPlan === "pro" ? 200 :
-  30;
-  const groupLimit =
-  userRole === "admin" ? 9999 :
-  userPlan === "pro" ? 3 :
-  1;
+  mode === "group"
+    ? getLimitByPlan(groupOwnerRole, groupOwnerPlan, "memo")
+    : getLimitByPlan(userRole, userPlan, "memo");
+
+const groupLimit = getLimitByPlan(userRole, userPlan, "group");
 
  const fetchCandidateItems = async () => {
   if (!userId) return;
@@ -616,11 +657,10 @@ const addGroupMember = async () => {
     return;
   }
 
-  // 👇 追加
-const memberLimit =
-userRole === "admin" ? 9999 :
-userPlan === "pro" ? 5 :
-2;
+  const memberLimit =
+  mode === "group"
+    ? getLimitByPlan(groupOwnerRole, groupOwnerPlan, "member")
+    : getLimitByPlan(userRole, userPlan, "member");
 
 if (groupMembers.length >= memberLimit) {
 alert(`メンバーは${memberLimit}人まで追加できます`);
@@ -821,6 +861,15 @@ const filteredItems = candidateItems.filter((item) => {
     alert("ログイン情報を取得できませんでした");
     return;
   }
+
+
+// 今のリスト件数（未完了だけでもOKだけど今回は全部で）
+const currentListCount = shoppingItems.length;
+
+if (currentListCount >= listLimit) {
+  alert(`このリストは${listLimit}件まで登録できます`);
+  return;
+}
 
   const trimmedName = item.name.trim();
   if (!trimmedName) return;
@@ -1476,7 +1525,7 @@ await supabase
 </select>
 
 {shoppingItems.filter(item => item.category === "一時メモ").length >= memoLimit - 5 &&
- userPlan !== "pro" && (
+ currentPlan !== "pro" && (
   <p className="mt-1 text-xs text-gray-400">
     あと{
       memoLimit -

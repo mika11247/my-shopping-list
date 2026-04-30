@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { supabase } from "../../lib/supabase";
 import { categories } from "@/lib/categories";
+import { getLimitByPlan } from "@/lib/planLimits";
 
 
 
@@ -42,10 +43,7 @@ const [editYomi, setEditYomi] = useState("");
 const [userPlan, setUserPlan] = useState<string>("free");
 const [userRole, setUserRole] = useState<"admin" | "user">("user");
 
-const masterLimit =
-  userRole === "admin" ? 9999 :
-  userPlan === "pro" ? 200 :
-  30;
+const masterLimit = getLimitByPlan(userRole, userPlan, "master");
 
   useEffect(() => {
     const getUser = async () => {

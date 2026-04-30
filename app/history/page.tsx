@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { supabase } from "../../lib/supabase";
 import { useRouter } from "next/navigation";
+import { getLimitByPlan } from "@/lib/planLimits";
 
 type DeletedItem = {
   id: number;
@@ -40,14 +41,15 @@ export default function HistoryPage() {
       return;
     }
     
-    // 👇ここ追加🔥
     const { data: profile } = await supabase
-      .from("profiles")
-      .select("plan")
-      .eq("user_id", user.id)
-      .single();
-    
-    const currentPlan = profile?.plan ?? "free";
+  .from("profiles")
+  .select("role, plan")
+  .eq("user_id", user.id)
+  .single();
+
+const currentRole = profile?.role ?? "user";
+const currentPlan = profile?.plan ?? "free";
+
     setUserPlan(currentPlan);
   
     const { data: memberships } = await supabase
@@ -61,7 +63,7 @@ export default function HistoryPage() {
       .from("deleted_items")
       .select("id, name, category, note, checked, deleted_at, group_id, purchased_by_name")
       .order("deleted_at", { ascending: false })
-      .limit(currentPlan === "pro" ? 200 : 50)
+      .limit(getLimitByPlan(currentRole, currentPlan, "history"))
 
     if (groupIds.length > 0) {
       query = query.or(

@@ -3,6 +3,9 @@
 import { useEffect, useState } from "react";
 import { supabase } from "../../lib/supabase";
 import { useRouter } from "next/navigation";
+import { getPlanLabel, getPlanColor } from "@/lib/planUI";
+
+
 
 export default function ProfilePage() {
   const router = useRouter();
@@ -306,25 +309,11 @@ router.push("/login?withdraw=1");
 
                 <div className="rounded-2xl bg-lime-50 p-3 ring-1 ring-lime-100">
                   <p className="text-xs text-gray-500">会員状況</p>
-                  <p
-  className={`mt-1 text-sm font-bold ${
-    userPlan === "pro"
-      ? "text-yellow-600"
-      : userPlan === "beta"
-      ? "text-blue-600"
-      : userPlan === "early_supporter"
-      ? "text-purple-600"
-      : "text-lime-700"
-  }`}
->
-  {userPlan === "pro"
-    ? "Pro会員"
-    : userPlan === "beta"
-    ? "β版会員"
-    : userPlan === "early_supporter"
-    ? "特別会員"
-    : "無料会員"}
+
+                  <p className={`mt-1 text-sm font-bold ${getPlanColor(userPlan)}`}>
+  {getPlanLabel(userPlan)}
 </p>
+                  
                 </div>
               </div>
             </section>
