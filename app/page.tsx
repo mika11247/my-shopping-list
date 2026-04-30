@@ -295,7 +295,7 @@ useEffect(() => {
   setCandidateItems(uniqueCandidates);
 };
 
-  const fetchItems = async () => {
+const fetchItems = async () => {
   if (!userId) return;
 
   if (mode === "group" && !selectedGroupId.trim()) {
@@ -303,13 +303,12 @@ useEffect(() => {
     return;
   }
 
-  let query = supabase
-    .from("shopping_items")
-    .select("*")
-    .eq("user_id", userId);
+  let query = supabase.from("shopping_items").select("*");
 
   if (mode === "personal") {
-    query = query.is("group_id", null);
+    query = query
+      .eq("user_id", userId)
+      .is("group_id", null);
   } else {
     query = query.eq("group_id", selectedGroupId.trim());
   }
