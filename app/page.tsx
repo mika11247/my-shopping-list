@@ -77,6 +77,8 @@ export default function Home() {
   const [inviteEmail, setInviteEmail] = useState("");
 const [inviteMessage, setInviteMessage] = useState("");
 
+const [isModeLoaded, setIsModeLoaded] = useState(false);
+
 const appUrl = "https://my-shopping-list-vxll.vercel.app";
 
 const primaryBtn =
@@ -152,12 +154,39 @@ const cancelInvitation = async (inviteId: number) => {
 };
 
 useEffect(() => {
-  if (!userId) return;
+  const savedMode = localStorage.getItem("shoppingListMode");
+  const savedGroupId = localStorage.getItem("shoppingListGroupId");
+
+  if (savedMode === "group") {
+    setMode("group");
+
+    if (savedGroupId) {
+      setSelectedGroupId(savedGroupId);
+    }
+  } else {
+    setMode("personal");
+  }
+
+  setIsModeLoaded(true);
+}, []);
+
+useEffect(() => {
+  if (!isModeLoaded) return;
+
+  localStorage.setItem("shoppingListMode", mode);
+
+  if (mode === "group" && selectedGroupId) {
+    localStorage.setItem("shoppingListGroupId", selectedGroupId);
+  }
+}, [mode, selectedGroupId, isModeLoaded]);
+
+useEffect(() => {
+  if (!userId || !isModeLoaded) return;
 
   fetchItems();
   fetchCandidateItems();
   fetchUserMasterItems();
-}, [userId, mode, selectedGroupId]);
+}, [userId, mode, selectedGroupId, isModeLoaded]);
 
 useEffect(() => {
   if (!userId) return;
