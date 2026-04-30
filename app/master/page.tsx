@@ -4,6 +4,8 @@ import { useEffect, useState } from "react";
 import { supabase } from "../../lib/supabase";
 import { categories } from "@/lib/categories";
 
+
+
 type MasterItem = {
   id: number;
   name: string;
@@ -37,12 +39,38 @@ export default function MasterPage() {
   const [newYomi, setNewYomi] = useState("");
 const [editYomi, setEditYomi] = useState("");
 
+const [userPlan, setUserPlan] = useState<string>("free");
+const [userRole, setUserRole] = useState<"admin" | "user">("user");
+
+const masterLimit =
+  userRole === "admin" ? 9999 :
+  userPlan === "pro" ? 200 :
+  30;
+
   useEffect(() => {
     const getUser = async () => {
       const { data } = await supabase.auth.getUser();
-      setUserId(data.user?.id || null);
+      const user = data.user;
+  
+      if (!user) return;
+  
+      setUserId(user.id);
+  
+      // 👇ここ追加🔥
+      const { data: profile, error } = await supabase
+        .from("profiles")
+        .select("role, plan")
+        .eq("user_id", user.id)
+        .single();
+  
+      if (error) {
+        console.error("profile取得エラー:", error);
+      } else {
+        setUserPlan(profile?.plan ?? "free");
+        setUserRole(profile?.role ?? "user");
+      }
     };
-
+  
     getUser();
   }, []);
 
@@ -71,6 +99,11 @@ const [editYomi, setEditYomi] = useState("");
   };
 
   const addMasterItem = async () => {
+    // 👇 追加（ここ一番上）
+if (items.length >= masterLimit) {
+  alert(`My itemsは${masterLimit}件まで登録できます`);
+  return;
+}
     const trimmedName = newItem.trim();
 if (!trimmedName || !userId) return;
 
@@ -226,6 +259,13 @@ setNewCategory("その他");
     >
       追加
     </button>
+
+    {items.length >= masterLimit - 5 && userPlan !== "pro" && (
+  <p className="text-xs text-gray-400">
+    あと{masterLimit - items.length}件で上限です
+  </p>
+)}
+
   </div>
 </div>
 

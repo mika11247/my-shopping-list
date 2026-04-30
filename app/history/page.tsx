@@ -19,6 +19,7 @@ export default function HistoryPage() {
   const router = useRouter();
   const [items, setItems] = useState<DeletedItem[]>([]);
   const [loading, setLoading] = useState(true);
+  const [userPlan, setUserPlan] = useState<string>("free");
 
   const [toast, setToast] = useState("");
 
@@ -38,6 +39,16 @@ export default function HistoryPage() {
       router.push("/login");
       return;
     }
+    
+    // 👇ここ追加🔥
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("plan")
+      .eq("user_id", user.id)
+      .single();
+    
+    const currentPlan = profile?.plan ?? "free";
+    setUserPlan(currentPlan);
   
     const { data: memberships } = await supabase
       .from("group_members")
@@ -50,8 +61,8 @@ export default function HistoryPage() {
       .from("deleted_items")
       .select("id, name, category, note, checked, deleted_at, group_id, purchased_by_name")
       .order("deleted_at", { ascending: false })
-      .limit(50);
-  
+      .limit(currentPlan === "pro" ? 200 : 50)
+
     if (groupIds.length > 0) {
       query = query.or(
         `and(user_id.eq.${user.id},group_id.is.null),group_id.in.(${groupIds.join(",")})`

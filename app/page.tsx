@@ -79,6 +79,9 @@ const [inviteMessage, setInviteMessage] = useState("");
 
 const [isModeLoaded, setIsModeLoaded] = useState(false);
 
+const [userRole, setUserRole] = useState<"admin" | "user">("user");
+const [userPlan, setUserPlan] = useState<string>("free");
+
 const appUrl = "https://my-shopping-list-vxll.vercel.app";
 
 const primaryBtn =
@@ -232,7 +235,6 @@ useEffect(() => {
     setDisplayName(name);
     setUserEmail(email);
 
-    // 👇 checkUser の中に入れる
     if (email) {
       await supabase.from("profiles").upsert({
         user_id: user.id,
@@ -242,10 +244,31 @@ useEffect(() => {
 
       await checkInvitations(user.id, email);
     }
+
+    // 👇ここ追加🔥
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("role, plan")
+      .eq("user_id", user.id)
+      .single();
+
+    if (profile) {
+      setUserRole(profile.role ?? "user");
+      setUserPlan(profile.plan ?? "free");
+    }
   };
 
   checkUser();
 }, [router]);
+
+const memoLimit =
+  userRole === "admin" ? 9999 :
+  userPlan === "pro" ? 200 :
+  30;
+  const groupLimit =
+  userRole === "admin" ? 9999 :
+  userPlan === "pro" ? 3 :
+  1;
 
  const fetchCandidateItems = async () => {
   if (!userId) return;
@@ -436,6 +459,11 @@ const createSharedGroup = async () => {
     return;
   }
 
+  if (ownedGroups.length >= groupLimit) {
+    alert(`共有リストは${groupLimit}個まで作成できます`);
+    return;
+  }
+
   const trimmedGroupName = newGroupName.trim();
   if (!trimmedGroupName) {
     alert("グループ名を入力してください");
@@ -587,6 +615,17 @@ const addGroupMember = async () => {
     alert("共有リストを選択してください");
     return;
   }
+
+  // 👇 追加
+const memberLimit =
+userRole === "admin" ? 9999 :
+userPlan === "pro" ? 5 :
+2;
+
+if (groupMembers.length >= memberLimit) {
+alert(`メンバーは${memberLimit}人まで追加できます`);
+return;
+}
 
   const email = inviteEmail.trim().toLowerCase();
 
@@ -834,6 +873,17 @@ if (matchedUserMaster?.category) {
   categoryToSave = matchedUserMaster.category;
 } else if (matchedMaster?.category) {
   categoryToSave = matchedMaster.category;
+}
+
+if (categoryToSave === "一時メモ") {
+  const memoCount = shoppingItems.filter(
+    (shoppingItem) => shoppingItem.category === "一時メモ"
+  ).length;
+
+  if (memoCount >= memoLimit) {
+    alert(`一時メモは${memoLimit}件まで登録できます`);
+    return;
+  }
 }
 
   const { data, error } = await supabase
@@ -1424,6 +1474,16 @@ await supabase
     </option>
   ))}
 </select>
+
+{shoppingItems.filter(item => item.category === "一時メモ").length >= memoLimit - 5 &&
+ userPlan !== "pro" && (
+  <p className="mt-1 text-xs text-gray-400">
+    あと{
+      memoLimit -
+      shoppingItems.filter(item => item.category === "一時メモ").length
+    }件で一時メモ上限です
+  </p>
+)}
 
 {search.trim() !== "" && (
   <div className="mt-3">

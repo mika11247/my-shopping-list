@@ -17,6 +17,8 @@ export default function ProfilePage() {
   const [message, setMessage] = useState("");
   const [provider, setProvider] = useState("");
 
+  const [userPlan, setUserPlan] = useState<string>("free");
+
   const isGoogleUser = provider === "google";
 
   const fetchProfile = async () => {
@@ -71,6 +73,18 @@ export default function ProfilePage() {
           email: user.email,
         });
       }
+
+      const { data: profile, error: profileError } = await supabase
+  .from("profiles")
+  .select("role, plan")
+  .eq("user_id", user.id)
+  .single();
+
+if (profileError) {
+  console.error("プロフィール取得エラー:", profileError);
+} else {
+  setUserPlan(profile?.plan ?? "free");
+}
       
       setLoading(false);
   };
@@ -292,9 +306,25 @@ router.push("/login?withdraw=1");
 
                 <div className="rounded-2xl bg-lime-50 p-3 ring-1 ring-lime-100">
                   <p className="text-xs text-gray-500">会員状況</p>
-                  <p className="mt-1 text-sm font-bold text-lime-700">
-                    無料会員
-                  </p>
+                  <p
+  className={`mt-1 text-sm font-bold ${
+    userPlan === "pro"
+      ? "text-yellow-600"
+      : userPlan === "beta"
+      ? "text-blue-600"
+      : userPlan === "early_supporter"
+      ? "text-purple-600"
+      : "text-lime-700"
+  }`}
+>
+  {userPlan === "pro"
+    ? "Pro会員"
+    : userPlan === "beta"
+    ? "β版会員"
+    : userPlan === "early_supporter"
+    ? "特別会員"
+    : "無料会員"}
+</p>
                 </div>
               </div>
             </section>
