@@ -860,7 +860,7 @@ if (userMasterLookupError) {
 // ② item_master も確認
 const { data: matchedMaster, error: masterLookupError } = await supabase
   .from("item_master")
-  .select("category")
+  .select("category, image_url")
   .eq("name", trimmedName)
   .maybeSingle();
 
@@ -896,7 +896,7 @@ if (categoryToSave === "一時メモ") {
       note: item.note,
       checked: false,
       group_id: mode === "group" ? selectedGroupId.trim() : null,
-      image_url: item.image_url ?? "🛒",
+      image_url: item.image_url ?? matchedMaster?.image_url ?? "🛒",
     },
   ])
   .select()

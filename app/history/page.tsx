@@ -115,6 +115,7 @@ export default function HistoryPage() {
         category: item.category ?? "その他",
         note: item.note ?? "",
         checked: false,
+        group_id: item.group_id ?? null,
       },
     ]);
 
