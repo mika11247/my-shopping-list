@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { supabase } from "../../lib/supabase";
+import { categories } from "@/lib/categories";
 
 type MasterItem = {
   id: number;
@@ -10,22 +11,6 @@ type MasterItem = {
   category: string | null;
   user_id: string;
 };
-
-const categories = [
-  "野菜・果物",
-  "肉",
-  "魚",
-  "乳製品",
-  "卵",
-  "冷凍",
-  "パン・穀物",
-  "調味料",
-  "飲み物",
-  "お菓子",
-  "日用品",
-  "その他",
-  "一時メモ",
-];
 
 const toHiragana = (text: string) => {
   return text.replace(/[\u30a1-\u30f6]/g, (char) =>

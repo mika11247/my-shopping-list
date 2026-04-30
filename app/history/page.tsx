@@ -164,52 +164,54 @@ export default function HistoryPage() {
       </div>
 
       {loading ? (
-        <p className="text-sm text-gray-500">読み込み中...</p>
-      ) : items.length === 0 ? (
-        <p className="text-sm text-gray-500">まだ履歴はありません。</p>
-      ) : (
-        <div className="space-y-6">
-          {Object.entries(groupedItems).map(([key, group]) => (
-            <div key={key}>
-              <h2 className="mb-2 text-sm font-bold text-sky-500">{key}</h2>
+  <p className="text-sm text-gray-500">読み込み中...</p>
+) : items.length === 0 ? (
+  <p className="text-sm text-gray-500">まだ履歴はありません。</p>
+) : (
+  <div className="space-y-6">
+    {Object.entries(groupedItems).map(([key, group]) => (
+      <div key={key}>
+        <h2 className="mb-2 flex flex-wrap items-center gap-2 text-sm font-bold text-sky-500">
+          <span>{key}</span>
 
-              <div className="space-y-3">
-                {group.map((item) => (
-                  <div
-                    key={item.id}
-                    className="rounded-2xl bg-white p-4 shadow-md ring-1 ring-sky-100"
-                  >
-                    <p className="font-bold text-gray-800">{item.name}</p>
+          {group[0]?.purchased_by_name && (
+            <span className="rounded-full bg-sky-100 px-2 py-0.5 text-xs font-normal text-sky-600">
+              {group[0].purchased_by_name}さんが購入
+            </span>
+          )}
+        </h2>
 
-                    <p className="mt-1 text-xs text-gray-500">
-                      {item.category ?? "その他"}
-                    </p>
+        <div className="space-y-3">
+          {group.map((item) => (
+            <div
+              key={item.id}
+              className="rounded-2xl bg-white p-4 shadow-md ring-1 ring-sky-100"
+            >
+              <p className="font-bold text-gray-800">{item.name}</p>
 
-                    {item.purchased_by_name && (
-  <p className="mt-1 text-xs text-sky-500">
-    {item.purchased_by_name}さんが購入
-  </p>
-)}
+              <p className="mt-1 text-xs text-gray-500">
+                {item.category ?? "その他"}
+              </p>
 
-                    {item.note && (
-                      <p className="mt-1 text-xs text-gray-400">
-                        {item.note}
-                      </p>
-                    )}
+              {item.note && (
+                <p className="mt-1 text-xs text-gray-400">
+                  {item.note}
+                </p>
+              )}
 
-                    <button
-                      onClick={() => addBackToList(item)}
-                      className="mt-2 rounded-full bg-sky-100 px-3 py-1 text-xs text-sky-600"
-                    >
-                      もう一回買う
-                    </button>
-                  </div>
-                ))}
-              </div>
+              <button
+                onClick={() => addBackToList(item)}
+                className="mt-2 rounded-full bg-sky-100 px-3 py-1 text-xs text-sky-600"
+              >
+                もう一回買う
+              </button>
             </div>
           ))}
         </div>
-      )}
+      </div>
+    ))}
+  </div>
+)}
     </main>
   );
 }

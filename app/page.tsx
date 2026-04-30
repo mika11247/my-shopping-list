@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/lib/supabase";
 import { useRouter } from "next/navigation";
+import { categories } from "@/lib/categories";
 
 type ShoppingItem = {
   id: number;
@@ -40,23 +41,6 @@ type Invitation = {
   status: string;
   created_at: string;
 };
-
-const categories = [
-  "野菜・果物",
-  "肉",
-  "魚",
-  "卵・大豆",
-  "乳製品",
-  "冷凍",
-  "主食（米・パン・麺）",
-  "調味料",
-  "インスタント・加工食品",
-  "飲み物",
-  "お菓子",
-  "日用品",
-  "その他",
-  "一時メモ"
-];
 
 const toHiragana = (text: string) => {
   return text.replace(/[\u30a1-\u30f6]/g, (char) =>
