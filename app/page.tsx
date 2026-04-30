@@ -1464,143 +1464,147 @@ await supabase
         </section>
 
         <section className="space-y-4">
-  {groupedItems.map(({ category, items }) => (
-    <div
-      key={category}
-      className="rounded-2xl bg-white p-4 shadow-sm ring-1 ring-neutral-200"
-    >
-      <h2 className="mb-3 text-lg font-semibold text-neutral-800">
-        {category}
-      </h2>
+  {shoppingItems.length === 0 ? (
+    <p className="rounded-2xl bg-white p-4 text-sm text-neutral-400 shadow-sm ring-1 ring-neutral-200">
+      まだありません
+    </p>
+  ) : (
+    groupedItems
+      .filter(({ items }) => items.length > 0)
+      .map(({ category, items }) => (
+        <div
+          key={category}
+          className="rounded-2xl bg-white p-4 shadow-sm ring-1 ring-neutral-200"
+        >
+          <h2 className="mb-3 text-lg font-semibold text-neutral-800">
+            {category}
+          </h2>
 
-      {items.length === 0 ? (
-        <p className="text-sm text-neutral-400">まだありません</p>
-      ) : (
-        <div className="space-y-3">
-          {items.map((item) => (
-            <div
-              key={item.id}
-              className={`flex items-center justify-between rounded-xl border p-3 transition-all duration-300 ease-out motion-reduce:transition-none ${
-  item.checked
-    ? "border-gray-200 bg-gray-100 scale-[0.99]"
-    : "border-neutral-100 bg-white"
-}`}
-            >
-              {editingId === item.id ? (
-  <div className="flex w-full flex-col gap-2 sm:flex-row sm:items-start">
-    <input
-      value={editName}
-      onChange={(e) => setEditName(e.target.value)}
-      className="flex-1 rounded-lg border border-neutral-300 px-3 py-2 text-base text-gray-800 placeholder:text-gray-400 outline-none focus:border-neutral-500 focus:ring-2 focus:ring-neutral-200"
-      placeholder="食材名"
-    />
-
-    <select
-      value={editCategory}
-      onChange={(e) => setEditCategory(e.target.value)}
-      className="flex-1 rounded-lg border border-neutral-300 px-3 py-2 text-base text-gray-800 outline-none focus:border-neutral-500 focus:ring-2 focus:ring-neutral-200"
-    >
-      {categories.map((cat) => (
-        <option key={cat} value={cat}>
-          {cat}
-        </option>
-      ))}
-    </select>
-
-    <input
-      value={editNote}
-      onChange={(e) => setEditNote(e.target.value)}
-      className="flex-1 rounded-lg border border-neutral-300 px-3 py-2 text-base text-gray-800 placeholder:text-gray-400 outline-none focus:border-neutral-500 focus:ring-2 focus:ring-neutral-200"
-      placeholder="メモ"
-    />
-
-                  <button
-                    onClick={saveEdit}
-                    className="rounded-lg bg-blue-500 px-3 py-2 text-sm text-white"
-                  >
-                    保存
-                  </button>
-
-                  <button
-                    onClick={cancelEdit}
-                    className="rounded-lg bg-neutral-200 px-3 py-2 text-sm text-neutral-700"
-                  >
-                    キャンセル
-                  </button>
-                </div>
-              ) : (
-                <>
-                  <div className="flex items-center gap-3">
+          <div className="space-y-3">
+            {items.map((item) => (
+              <div
+                key={item.id}
+                className={`flex items-center justify-between rounded-xl border p-3 transition-all duration-300 ease-out motion-reduce:transition-none ${
+                  item.checked
+                    ? "border-gray-200 bg-gray-100 scale-[0.99]"
+                    : "border-neutral-100 bg-white"
+                }`}
+              >
+                {editingId === item.id ? (
+                  <div className="flex w-full flex-col gap-2 sm:flex-row sm:items-start">
                     <input
-                      type="checkbox"
-                      checked={item.checked}
-                      onChange={() => toggleItem(item.id, item.checked)}
-                      className="h-4 w-4"
+                      value={editName}
+                      onChange={(e) => setEditName(e.target.value)}
+                      className="flex-1 rounded-lg border border-neutral-300 px-3 py-2 text-base text-gray-800 placeholder:text-gray-400 outline-none focus:border-neutral-500 focus:ring-2 focus:ring-neutral-200"
+                      placeholder="食材名"
                     />
 
-                    <div
-  className={`flex h-10 w-10 items-center justify-center rounded-xl text-xl transition-all duration-300 ease-out motion-reduce:transition-none ${
-    item.checked
-      ? "bg-gray-100 opacity-50 scale-95"
-      : "bg-lime-50 scale-100"
-  }`}
->
-  {item.image_url?.startsWith("http") ? (
-  <img
-    src={item.image_url}
-    className="h-8 w-8 object-cover rounded"
-  />
-) : (
-  <span>{item.image_url ?? "🛒"}</span>
-)}
-</div>
+                    <select
+                      value={editCategory}
+                      onChange={(e) => setEditCategory(e.target.value)}
+                      className="flex-1 rounded-lg border border-neutral-300 px-3 py-2 text-base text-gray-800 outline-none focus:border-neutral-500 focus:ring-2 focus:ring-neutral-200"
+                    >
+                      {categories.map((cat) => (
+                        <option key={cat} value={cat}>
+                          {cat}
+                        </option>
+                      ))}
+                    </select>
 
-                    <div>
-                      <p
-                        className={`text-sm font-medium transition-all duration-300 ease-out motion-reduce:transition-none ${
+                    <input
+                      value={editNote}
+                      onChange={(e) => setEditNote(e.target.value)}
+                      className="flex-1 rounded-lg border border-neutral-300 px-3 py-2 text-base text-gray-800 placeholder:text-gray-400 outline-none focus:border-neutral-500 focus:ring-2 focus:ring-neutral-200"
+                      placeholder="メモ"
+                    />
+
+                    <button
+                      onClick={saveEdit}
+                      className="rounded-lg bg-blue-500 px-3 py-2 text-sm text-white"
+                    >
+                      保存
+                    </button>
+
+                    <button
+                      onClick={cancelEdit}
+                      className="rounded-lg bg-neutral-200 px-3 py-2 text-sm text-neutral-700"
+                    >
+                      キャンセル
+                    </button>
+                  </div>
+                ) : (
+                  <>
+                    <div className="flex items-center gap-3">
+                      <input
+                        type="checkbox"
+                        checked={item.checked}
+                        onChange={() => toggleItem(item.id, item.checked)}
+                        className="h-4 w-4"
+                      />
+
+                      <div
+                        className={`flex h-10 w-10 items-center justify-center rounded-xl text-xl transition-all duration-300 ease-out motion-reduce:transition-none ${
                           item.checked
-                            ? "text-neutral-400 line-through opacity-60"
-                            : "text-gray-800"
+                            ? "bg-gray-100 opacity-50 scale-95"
+                            : "bg-lime-50 scale-100"
                         }`}
                       >
-                        {item.name}
-                      </p>
+                        {item.image_url?.startsWith("http") ? (
+                          <img
+                            src={item.image_url}
+                            className="h-8 w-8 object-cover rounded"
+                          />
+                        ) : (
+                          <span>{item.image_url ?? "🛒"}</span>
+                        )}
+                      </div>
 
-                      {item.note && (
-                        <p className="text-xs text-neutral-500">
-                          {item.note}
+                      <div>
+                        <p
+                          className={`text-sm font-medium transition-all duration-300 ease-out motion-reduce:transition-none ${
+                            item.checked
+                              ? "text-neutral-400 line-through opacity-60"
+                              : "text-gray-800"
+                          }`}
+                        >
+                          {item.name}
                         </p>
-                      )}
+
+                        {item.note && (
+                          <p className="text-xs text-neutral-500">
+                            {item.note}
+                          </p>
+                        )}
+                      </div>
                     </div>
-                  </div>
 
-                  <div className="flex gap-2 text-xs">
-                    <button
-                      onClick={() => startEdit(item)}
-                      className="text-blue-500"
-                    >
-                      編集
-                    </button>
+                    <div className="flex gap-2 text-xs">
+                      <button
+                        onClick={() => startEdit(item)}
+                        className="text-blue-500"
+                      >
+                        編集
+                      </button>
 
-                    <button
-                      onClick={() => {
-                        if (confirm("削除していい？")) {
-                          deleteItem(item.id);
-                        }
-                      }}
-                      className="text-red-500"
-                    >
-                      削除
-                    </button>
-                  </div>
-                </>
-              )}
-            </div>
-          ))}
+                      <button
+                        onClick={() => {
+                          if (confirm("削除していい？")) {
+                            deleteItem(item.id);
+                          }
+                        }}
+                        className="text-red-500"
+                      >
+                        削除
+                      </button>
+                    </div>
+                  </>
+                )}
+              </div>
+            ))}
+          </div>
         </div>
-      )}
-    </div>
-  ))}
+      ))
+  )}
 </section>
       </div>
     </main>
