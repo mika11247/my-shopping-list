@@ -240,6 +240,7 @@ router.push("/login?withdraw=1");
         {loading ? (
           <p className="text-sm text-gray-500">読み込み中...</p>
         ) : (
+          
           <div className="space-y-4">
             <section className="rounded-2xl bg-white p-4 shadow ring-1 ring-lime-100">
               <p className="text-sm font-bold text-lime-700">アカウント</p>
