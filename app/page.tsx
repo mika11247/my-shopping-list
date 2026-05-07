@@ -1270,6 +1270,13 @@ style={{
   プライバシー 🔐
 </button>
 
+<button
+  onClick={() => router.push("/disclaimer")}
+  className="rounded-full bg-gray-100 px-3 py-1 text-xs text-gray-600 shadow ring-1 ring-gray-200 hover:bg-gray-200"
+>
+  免責事項 ⚠️
+</button>
+
 </div>
 
   <p className="mt-2 text-sm text-neutral-600">
