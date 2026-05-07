@@ -13,6 +13,7 @@ type MasterItem = {
   yomi: string | null;
   category: string | null;
   user_id: string;
+  image_url?: string | null;
 };
 
 const toHiragana = (text: string) => {
@@ -39,6 +40,9 @@ export default function MasterPage() {
 
   const [newYomi, setNewYomi] = useState("");
 const [editYomi, setEditYomi] = useState("");
+
+const [newImageUrl, setNewImageUrl] = useState("");
+const [editImageUrl, setEditImageUrl] = useState("");
 
 const [userPlan, setUserPlan] = useState<string>("free");
 const [userRole, setUserRole] = useState<"admin" | "user">("user");
@@ -140,6 +144,7 @@ if (!yomiToSave) {
         name: trimmedName,
         yomi: yomiToSave,
         category: newCategory,
+        image_url: newImageUrl || "🛒",
       },
     ],
     {
@@ -157,21 +162,28 @@ if (!yomiToSave) {
    setItems((prev) => [...prev, data]);
 
 setNewItem("");
-setNewYomi(""); // ←ここ🔥
+setNewYomi("");
+setNewImageUrl(""); // ←ここ🔥
 setNewCategory("その他");
   };
 
   const updateMasterItem = async (
-  id: number,
-  name: string,
-  yomi: string,
-  category: string
-) => {
+    id: number,
+    name: string,
+    yomi: string,
+    category: string,
+    image_url: string
+  ) => {
   if (!userId) return;
 
   const { data, error } = await supabase
     .from("user_item_master")
-    .update({ name, yomi, category })
+    .update({
+      name,
+      yomi,
+      category,
+      image_url,
+    })
     .eq("id", id)
     .eq("user_id", userId)
     .select();
@@ -187,7 +199,15 @@ setNewCategory("その他");
 
   setItems((prev) =>
     prev.map((item) =>
-      item.id === id ? { ...item, name, yomi, category } : item
+      item.id === id
+        ? {
+            ...item,
+            name,
+            yomi,
+            category,
+            image_url,
+          }
+        : item
     )
   );
 
@@ -286,6 +306,29 @@ onBlur={(e) => {
     theme === "default" ? "#fbcfe8" : "var(--ring-color)";
 }}
   />
+
+<input
+  value={newImageUrl}
+  onChange={(e) => setNewImageUrl(e.target.value)}
+  placeholder={
+    userPlan === "pro" || userPlan === "special"
+      ? "画像URL or 絵文字"
+      : "絵文字"
+  }
+  className="rounded-xl border bg-white px-3 py-2 text-base text-gray-700 outline-none"
+  style={{
+    borderColor:
+      theme === "default" ? "#fbcfe8" : "var(--ring-color)",
+  }}
+  onFocus={(e) => {
+    e.target.style.borderColor =
+      theme === "default" ? "#ec4899" : "var(--main-color)";
+  }}
+  onBlur={(e) => {
+    e.target.style.borderColor =
+      theme === "default" ? "#fbcfe8" : "var(--ring-color)";
+  }}
+/>
 
   <div className="flex gap-2">
     <select
@@ -394,6 +437,29 @@ onBlur={(e) => {
             placeholder="よみ"
           />
 
+<input
+  value={editImageUrl}
+  onChange={(e) => setEditImageUrl(e.target.value)}
+  className="rounded-xl border bg-white px-3 py-2 text-base text-gray-800 outline-none"
+  style={{
+    borderColor:
+      theme === "default" ? "#fbcfe8" : "var(--ring-color)",
+  }}
+  onFocus={(e) => {
+    e.target.style.borderColor =
+      theme === "default" ? "#ec4899" : "var(--main-color)";
+  }}
+  onBlur={(e) => {
+    e.target.style.borderColor =
+      theme === "default" ? "#fbcfe8" : "var(--ring-color)";
+  }}
+  placeholder={
+    userPlan === "pro" || userPlan === "special"
+      ? "画像URL or 絵文字"
+      : "絵文字"
+  }
+/>
+
 <select
   value={editCategory}
   onChange={(e) => setEditCategory(e.target.value)}
@@ -422,7 +488,13 @@ onBlur={(e) => {
         <div className="mt-2 flex justify-end gap-2">
           <button
             onClick={() =>
-              updateMasterItem(item.id, editName, editYomi, editCategory)
+              updateMasterItem(
+                item.id,
+                editName,
+                editYomi,
+                editCategory,
+                editImageUrl
+              )
             }
             className="min-w-[60px] rounded-full bg-green-100 px-3 py-1 text-xs font-medium text-green-600 shadow ring-1 ring-green-200 hover:bg-green-200"
           >
@@ -435,6 +507,7 @@ onBlur={(e) => {
               setEditName("");
               setEditYomi("");
               setEditCategory("その他");
+              setEditImageUrl("");
             }}
             className="min-w-[60px] rounded-full bg-gray-100 px-3 py-1 text-xs font-medium text-gray-600 shadow ring-1 ring-gray-200 hover:bg-gray-200"
           >
@@ -456,11 +529,30 @@ onBlur={(e) => {
     ) : (
       <div className="flex items-center justify-between gap-3">
         <div className="flex flex-1 flex-col">
-          <span className="text-gray-800">{item.name}</span>
-          <span className="text-xs text-gray-500">
-            {item.yomi ? `${item.yomi} / ` : ""}
-            {item.category ?? "その他"}
-          </span>
+        <div className="flex items-center gap-3">
+  <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-white text-xl shadow-sm ring-1 ring-pink-100">
+    {item.image_url?.startsWith("http") ? (
+      <img
+        src={item.image_url}
+        className="h-8 w-8 rounded object-cover"
+      />
+    ) : (
+      <span>{item.image_url ?? "🛒"}</span>
+    )}
+  </div>
+
+  <div className="flex flex-col">
+    <span className="text-gray-800">
+      {item.name}
+    </span>
+
+    <span className="text-xs text-gray-500">
+      {item.yomi ? `${item.yomi} / ` : ""}
+      {item.category ?? "その他"}
+    </span>
+  </div>
+</div>
+         
         </div>
 
         <div className="flex gap-2">
@@ -470,6 +562,7 @@ onBlur={(e) => {
     setEditName(item.name);
     setEditYomi(item.yomi ?? "");
     setEditCategory(item.category ?? "その他");
+    setEditImageUrl(item.image_url ?? "🛒");
   }}
   className="rounded-full px-3 py-1 text-xs shadow"
   style={{

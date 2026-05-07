@@ -86,6 +86,8 @@ const [groupOwnerPlan, setGroupOwnerPlan] = useState<string>("free");
 const [groupOwnerRole, setGroupOwnerRole] = useState<"admin" | "user">("user");
 const [theme, setTheme] = useState("default");
 
+const [previewImage, setPreviewImage] = useState<string | null>(null);
+
 const appUrl = "https://my-shopping-list-vxll.vercel.app";
 
 const primaryBtn =
@@ -373,7 +375,7 @@ const groupLimit = getLimitByPlan(userRole, userPlan, "group");
 
     supabase
       .from("user_item_master")
-      .select("name, yomi, category")
+      .select("name, yomi, category, image_url")
       .eq("user_id", userId)
       .order("id", { ascending: false }),
   ]);
@@ -455,9 +457,9 @@ const fetchUserMasterItems = async () => {
   if (!userId) return;
 
   const { data, error } = await supabase
-    .from("user_item_master")
-    .select("name, category")
-    .eq("user_id", userId);
+  .from("user_item_master")
+  .select("name, category, image_url")
+  .eq("user_id", userId);
 
   if (error) {
     console.error("ユーザーマスター取得エラー:", error);
@@ -465,11 +467,12 @@ const fetchUserMasterItems = async () => {
   }
 
   const formatted: CandidateItem[] = (data || []).map((item) => ({
-  name: item.name,
-  yomi: item.name,
-  category: item.category ?? "その他",
-  note: "",
-}));
+    name: item.name,
+    yomi: item.name,
+    category: item.category ?? "その他",
+    note: "",
+    image_url: item.image_url ?? "🛒",
+  }));
 
   setUserMasterItems(formatted);
 };
@@ -1594,11 +1597,20 @@ onBlur={(e) => {
     type="button"
     onClick={() => {
       if (!search.trim()) return;
-
+    
+      const matchedCandidate = candidateItems.find(
+        (item) =>
+          item.name.trim().toLowerCase() ===
+          search.trim().toLowerCase()
+      );
+    
       addItem({
         name: search,
-        category: selectedCategory,
-        note: "",
+        category:
+          matchedCandidate?.category ?? selectedCategory,
+        note: matchedCandidate?.note ?? "",
+        image_url:
+          matchedCandidate?.image_url ?? "🛒",
         saveToMaster: false,
         isManual: false,
       });
@@ -1784,71 +1796,84 @@ style={{
                 ) : (
                   <>
                     <div
-  className="flex items-center"
-  style={{
-    gap: "var(--item-gap)",
-  }}
->
+                      className="flex items-center"
+                      style={{
+                        gap: "var(--item-gap)",
+                      }}
+                    >
                       <input
                         type="checkbox"
                         checked={item.checked}
                         onChange={() => toggleItem(item.id, item.checked)}
                         className="h-4 w-4"
                       />
-
-<div
-  className="flex items-center justify-center rounded-xl text-xl transition-all duration-300 ease-out motion-reduce:transition-none"
-  style={{
-    width: "var(--icon-size)",
-    height: "var(--icon-size)",
-    backgroundColor: item.checked
-      ? "#f3f4f6"
-      : theme === "default"
-      ? "#ecfccb"
-      : "var(--sub-bg)",
-    opacity: item.checked ? 0.5 : 1,
-    transform: item.checked ? "scale(0.95)" : "scale(1)",
-  }}
->
+                
+                      <button
+                        type="button"
+                        onClick={() => {
+                          if (
+                            (currentPlan === "pro" || currentPlan === "special") &&
+                            item.image_url?.startsWith("http")
+                          ) {
+                            setPreviewImage(item.image_url);
+                          }
+                        }}
+                        className="flex items-center justify-center rounded-xl text-xl transition-all duration-300 ease-out motion-reduce:transition-none"
+                        style={{
+                          width: "var(--icon-size)",
+                          height: "var(--icon-size)",
+                          backgroundColor: item.checked
+                            ? "#f3f4f6"
+                            : theme === "default"
+                            ? "#ecfccb"
+                            : "var(--sub-bg)",
+                          opacity: item.checked ? 0.5 : 1,
+                          transform: item.checked ? "scale(0.95)" : "scale(1)",
+                        }}
+                      >
                         {item.image_url?.startsWith("http") ? (
                           <img
                             src={item.image_url}
-                            className="h-8 w-8 object-cover rounded"
+                            className="object-cover rounded"
+                            style={{
+                              width: "calc(var(--icon-size) - 8px)",
+                              height: "calc(var(--icon-size) - 8px)",
+                            }}
                           />
                         ) : (
                           <span>{item.image_url ?? "🛒"}</span>
                         )}
-                      </div>
-
+                      </button>
+                
                       <div>
-                      <p
-  className={`font-medium transition-all duration-300 ease-out motion-reduce:transition-none ${
-    item.checked
-      ? "text-neutral-400 line-through opacity-60"
-      : "text-gray-800"
-  }`}
-  style={{
-    fontSize: "var(--font-item)",
-    lineHeight: "1.4",
-  }}
->
-  {item.name}
-</p>
-
-{item.note && (
-  <p
-    className="text-neutral-500"
-    style={{
-      fontSize: "var(--font-meta)",
-      lineHeight: "1.4",
-    }}
-  >
-    {item.note}
-  </p>
-)}
+                        <p
+                          className={`font-medium transition-all duration-300 ease-out motion-reduce:transition-none ${
+                            item.checked
+                              ? "text-neutral-400 line-through opacity-60"
+                              : "text-gray-800"
+                          }`}
+                          style={{
+                            fontSize: "var(--font-item)",
+                            lineHeight: "1.4",
+                          }}
+                        >
+                          {item.name}
+                        </p>
+                
+                        {item.note && (
+                          <p
+                            className="text-neutral-500"
+                            style={{
+                              fontSize: "var(--font-meta)",
+                              lineHeight: "1.4",
+                            }}
+                          >
+                            {item.note}
+                          </p>
+                        )}
                       </div>
                     </div>
-
+                
                     <div className="flex gap-2 text-xs">
                       <button
                         onClick={() => startEdit(item)}
@@ -1856,7 +1881,7 @@ style={{
                       >
                         編集
                       </button>
-
+                
                       <button
                         onClick={() => {
                           if (confirm("削除していい？")) {
@@ -1878,6 +1903,31 @@ style={{
   )}
 </section>
       </div>
+      {previewImage && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4"
+          onClick={() => setPreviewImage(null)}
+        >
+          <div
+            className="relative max-w-sm rounded-2xl bg-white p-3 shadow-xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <button
+              type="button"
+              onClick={() => setPreviewImage(null)}
+              className="absolute -right-2 -top-2 rounded-full bg-white px-3 py-1 text-sm text-gray-600 shadow"
+            >
+              ×
+            </button>
+      
+            <img
+              src={previewImage}
+              alt="アイテム画像"
+              className="max-h-[70vh] w-full rounded-xl object-contain"
+            />
+          </div>
+        </div>
+      )}
     </main>
   );
 }
