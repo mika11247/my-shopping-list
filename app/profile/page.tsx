@@ -22,10 +22,94 @@ export default function ProfilePage() {
 
   const [userPlan, setUserPlan] = useState<string>("free");
   const [theme, setTheme] = useState("default");
+  const [fontSize, setFontSize] = useState("normal");
+  const [density, setDensity] = useState("normal");
 
   const changeTheme = (newTheme: string) => {
     setTheme(newTheme);
     localStorage.setItem("theme", newTheme);
+  };
+
+  const changeFontSize = (size: string) => {
+    setFontSize(size);
+  
+    localStorage.setItem("fontSize", size);
+  
+    const root = document.documentElement;
+  
+    const sizes: Record<
+  string,
+  {
+    item: string;
+    meta: string;
+    button: string;
+  }
+> = {
+  small: {
+    item: "13px",
+    meta: "11px",
+    button: "13px",
+  },
+  
+  normal: {
+    item: "14px",
+    meta: "12px",
+    button: "14px",
+  },
+  
+  large: {
+    item: "16px",
+    meta: "13px",
+    button: "15px",
+  },
+};
+  
+    const current = sizes[size] ?? sizes.normal;
+  
+    root.style.setProperty("--font-item", current.item);
+    root.style.setProperty("--font-meta", current.meta);
+    root.style.setProperty("--font-button", current.button);
+  };
+
+  const changeDensity = (value: string) => {
+    setDensity(value);
+  
+    localStorage.setItem("density", value);
+  
+    const root = document.documentElement;
+  
+    const densities = {
+      compact: {
+        itemPadding: "8px",
+        iconSize: "32px",
+        itemGap: "8px",
+      },
+  
+      normal: {
+        itemPadding: "12px",
+        iconSize: "40px",
+        itemGap: "12px",
+      },
+    };
+  
+    const current =
+      densities[value as keyof typeof densities] ??
+      densities.normal;
+  
+    root.style.setProperty(
+      "--item-padding",
+      current.itemPadding
+    );
+  
+    root.style.setProperty(
+      "--icon-size",
+      current.iconSize
+    );
+  
+    root.style.setProperty(
+      "--item-gap",
+      current.itemGap
+    );
   };
 
   const isGoogleUser = provider === "google";
@@ -223,6 +307,13 @@ router.push("/login?withdraw=1");
     if (savedTheme) {
       setTheme(savedTheme);
     }
+  }, []);
+
+  useEffect(() => {
+    const savedFontSize =
+      localStorage.getItem("fontSize") ?? "normal";
+  
+    setFontSize(savedFontSize);
   }, []);
 
   return (
@@ -530,16 +621,99 @@ style={{
         </div>
       </div>
 
+      <div>
+  <p className="mb-2 text-xs text-gray-500">
+    文字サイズ
+  </p>
+
+  <div className="flex flex-wrap gap-2">
+    {[
+      ["small", "小"],
+      ["normal", "標準"],
+      ["large", "大"],
+    ].map(([value, label]) => (
       <button
-        className="w-full rounded-full px-4 py-2 text-sm font-bold"
+        key={value}
+        onClick={() => changeFontSize(value)}
+        className="rounded-full px-3 py-1 text-xs font-bold"
         style={{
           backgroundColor:
-            theme === "default" ? "#e0f2fe" : "var(--main-bg)",
-          color: theme === "default" ? "#0369a1" : "var(--main-text)",
+            fontSize === value
+              ? theme === "default"
+                ? "#e5e7eb"
+                : "var(--main-bg)"
+              : "#f3f4f6",
+
+          color:
+            fontSize === value
+              ? theme === "default"
+                ? "#374151"
+                : "var(--main-text)"
+              : "#6b7280",
+
+          border: `2px solid ${
+            fontSize === value
+              ? theme === "default"
+                ? "#9ca3af"
+                : "var(--main-color)"
+              : "transparent"
+          }`,
         }}
       >
-        文字サイズを設定する
+        {fontSize === value ? `${label} ✓` : label}
       </button>
+    ))}
+  </div>
+</div>
+
+<div>
+  <p className="mb-2 text-xs text-gray-500">
+    表示密度
+  </p>
+
+  <div className="flex flex-wrap gap-2">
+    {[
+      ["compact", "コンパクト"],
+      ["normal", "標準"],
+    ].map(([value, label]) => (
+      <button
+        key={value}
+        onClick={() => changeDensity(value)}
+        className="rounded-full px-3 py-1 text-xs font-bold"
+        style={{
+          backgroundColor:
+            density === value
+              ? theme === "default"
+                ? "#e5e7eb"
+                : "var(--main-bg)"
+              : "#f3f4f6",
+
+          color:
+            density === value
+              ? theme === "default"
+                ? "#374151"
+                : "var(--main-text)"
+              : "#6b7280",
+
+          border: `2px solid ${
+            density === value
+              ? theme === "default"
+                ? "#9ca3af"
+                : "var(--main-color)"
+              : "transparent"
+          }`,
+        }}
+      >
+        {density === value ? `${label} ✓` : label}
+      </button>
+    ))}
+  </div>
+</div>
+
+<p className="mt-3 text-xs text-gray-400">
+  設定は自動で保存されます
+</p>
+
     </div>
   </section>
 )}

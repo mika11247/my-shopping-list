@@ -223,6 +223,46 @@ useEffect(() => {
   fetchPendingInvitations(); // ←これ追加🔥
 }, [mode, selectedGroupId]);
 
+useEffect(() => {
+  const density =
+    localStorage.getItem("density") ?? "normal";
+
+  const root = document.documentElement;
+
+  const densities = {
+    compact: {
+      itemPadding: "8px",
+      iconSize: "32px",
+      itemGap: "8px",
+    },
+
+    normal: {
+      itemPadding: "12px",
+      iconSize: "40px",
+      itemGap: "12px",
+    },
+  };
+
+  const current =
+    densities[density as keyof typeof densities] ??
+    densities.normal;
+
+  root.style.setProperty(
+    "--item-padding",
+    current.itemPadding
+  );
+
+  root.style.setProperty(
+    "--icon-size",
+    current.iconSize
+  );
+
+  root.style.setProperty(
+    "--item-gap",
+    current.itemGap
+  );
+}, []);
+
 const fetchGroupOwnerPlan = async () => {
   if (!selectedGroupId) return;
 
@@ -1689,11 +1729,15 @@ style={{
             {items.map((item) => (
               <div
                 key={item.id}
-                className={`flex items-center justify-between rounded-xl border p-3 transition-all duration-300 ease-out motion-reduce:transition-none ${
+                className={`flex items-center justify-between rounded-xl border transition-all duration-300 ease-out motion-reduce:transition-none ${
                   item.checked
                     ? "border-gray-200 bg-gray-100 scale-[0.99]"
                     : "border-neutral-100 bg-white"
                 }`}
+                style={{
+                  padding: "var(--item-padding)",
+                }}
+                
               >
                 {editingId === item.id ? (
                   <div className="flex w-full flex-col gap-2 sm:flex-row sm:items-start">
@@ -1739,7 +1783,12 @@ style={{
                   </div>
                 ) : (
                   <>
-                    <div className="flex items-center gap-3">
+                    <div
+  className="flex items-center"
+  style={{
+    gap: "var(--item-gap)",
+  }}
+>
                       <input
                         type="checkbox"
                         checked={item.checked}
@@ -1748,8 +1797,10 @@ style={{
                       />
 
 <div
-  className="flex h-10 w-10 items-center justify-center rounded-xl text-xl transition-all duration-300 ease-out motion-reduce:transition-none"
+  className="flex items-center justify-center rounded-xl text-xl transition-all duration-300 ease-out motion-reduce:transition-none"
   style={{
+    width: "var(--icon-size)",
+    height: "var(--icon-size)",
     backgroundColor: item.checked
       ? "#f3f4f6"
       : theme === "default"
@@ -1770,21 +1821,31 @@ style={{
                       </div>
 
                       <div>
-                        <p
-                          className={`text-sm font-medium transition-all duration-300 ease-out motion-reduce:transition-none ${
-                            item.checked
-                              ? "text-neutral-400 line-through opacity-60"
-                              : "text-gray-800"
-                          }`}
-                        >
-                          {item.name}
-                        </p>
+                      <p
+  className={`font-medium transition-all duration-300 ease-out motion-reduce:transition-none ${
+    item.checked
+      ? "text-neutral-400 line-through opacity-60"
+      : "text-gray-800"
+  }`}
+  style={{
+    fontSize: "var(--font-item)",
+    lineHeight: "1.4",
+  }}
+>
+  {item.name}
+</p>
 
-                        {item.note && (
-                          <p className="text-xs text-neutral-500">
-                            {item.note}
-                          </p>
-                        )}
+{item.note && (
+  <p
+    className="text-neutral-500"
+    style={{
+      fontSize: "var(--font-meta)",
+      lineHeight: "1.4",
+    }}
+  >
+    {item.note}
+  </p>
+)}
                       </div>
                     </div>
 
