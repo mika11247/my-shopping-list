@@ -484,6 +484,9 @@ onBlur={(e) => {
       const url = await uploadImage(file);
 
       if (url) {
+        if (newImageUrl.startsWith("http")) {
+          await deleteStorageImage(newImageUrl);
+        }
         setNewImageUrl(url);
       }
     }}
@@ -671,6 +674,9 @@ onBlur={(e) => {
       const url = await uploadImage(file);
 
       if (url) {
+        if (editImageUrl.startsWith("http")) {
+          await deleteStorageImage(editImageUrl);
+        }
         setEditImageUrl(url);
       }
     }}
