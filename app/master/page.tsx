@@ -48,6 +48,7 @@ const [userPlan, setUserPlan] = useState<string>("free");
 const [userRole, setUserRole] = useState<"admin" | "user">("user");
 
 const [theme, setTheme] = useState("default");
+const [uploading, setUploading] = useState(false);
 
 useEffect(() => {
   const savedTheme = localStorage.getItem("theme");
@@ -176,6 +177,15 @@ setNewCategory("その他");
   ) => {
   if (!userId) return;
 
+  const currentItem = items.find((item) => item.id === id);
+
+if (
+  currentItem?.image_url?.startsWith("http") &&
+  currentItem.image_url !== image_url
+) {
+  await deleteStorageImage(currentItem.image_url);
+}
+
   const { data, error } = await supabase
     .from("user_item_master")
     .update({
@@ -214,20 +224,133 @@ setNewCategory("その他");
   setEditingId(null);
 };
 
-  const deleteMasterItem = async (id: number) => {
-    const { error } = await supabase
-      .from("user_item_master")
-      .delete()
-      .eq("id", id);
+const deleteMasterItem = async (id: number) => {
+  const targetItem = items.find((item) => item.id === id);
 
+  if (targetItem?.image_url?.startsWith("http")) {
+    await deleteStorageImage(targetItem.image_url);
+  }
+
+  const { error } = await supabase
+    .from("user_item_master")
+    .delete()
+    .eq("id", id);
+
+  if (error) {
+    console.error("削除エラー:", error);
+  } else {
+    setItems((prev) => prev.filter((item) => item.id !== id));
+  }
+};
+
+const compressImage = async (file: File) => {
+  return new Promise<File>((resolve) => {
+    const img = new Image();
+    const reader = new FileReader();
+
+    reader.readAsDataURL(file);
+
+    reader.onload = (event) => {
+      img.src = event.target?.result as string;
+    };
+
+    img.onload = () => {
+      const canvas = document.createElement("canvas");
+
+      const maxWidth = 800;
+
+      const scale = Math.min(1, maxWidth / img.width);
+
+      canvas.width = img.width * scale;
+      canvas.height = img.height * scale;
+
+      const ctx = canvas.getContext("2d");
+
+      ctx?.drawImage(
+        img,
+        0,
+        0,
+        canvas.width,
+        canvas.height
+      );
+
+      canvas.toBlob(
+        (blob) => {
+          if (!blob) return resolve(file);
+
+          const compressedFile = new File(
+            [blob],
+            file.name,
+            {
+              type: "image/jpeg",
+            }
+          );
+
+          resolve(compressedFile);
+        },
+        "image/jpeg",
+        0.7
+      );
+    };
+  });
+};
+
+  const uploadImage = async (file: File) => {
+    const compressedFile = await compressImage(file);
+    if (!userId) return null;
+  
+    setUploading(true);
+  
+    const fileExt = file.name.split(".").pop();
+    const fileName = `${userId}/${Date.now()}.${fileExt}`;
+  
+    const { error } = await supabase.storage
+      .from("item-images")
+      .upload(fileName, compressedFile);
+  
     if (error) {
-      console.error("削除エラー:", error);
-    } else {
-      setItems((prev) => prev.filter((item) => item.id !== id));
+      console.error("画像アップロードエラー:", error);
+      alert("画像のアップロードに失敗しました");
+  
+      setUploading(false);
+      return null;
+    }
+  
+    const { data } = supabase.storage
+      .from("item-images")
+      .getPublicUrl(fileName);
+  
+    setUploading(false);
+  
+    return data.publicUrl;
+  };
+
+  const extractStoragePath = (url: string) => {
+    const marker = "/storage/v1/object/public/item-images/";
+  
+    const index = url.indexOf(marker);
+  
+    if (index === -1) return null;
+  
+    return url.substring(index + marker.length);
+  };
+
+  const deleteStorageImage = async (url: string) => {
+    const path = extractStoragePath(url);
+  
+    if (!path) return;
+  
+    const { error } = await supabase.storage
+      .from("item-images")
+      .remove([path]);
+  
+    if (error) {
+      console.error("画像削除エラー:", error);
     }
   };
 
   return (
+
     <main
   className={`min-h-screen p-4 ${theme} master`}
   style={{ background: "var(--bg-gradient)" }}
@@ -329,6 +452,63 @@ onBlur={(e) => {
       theme === "default" ? "#fbcfe8" : "var(--ring-color)";
   }}
 />
+
+{newImageUrl?.startsWith("http") && (
+  <img
+    src={newImageUrl}
+    className="h-20 w-20 rounded-xl object-cover shadow"
+  />
+)}
+
+{(userPlan === "pro" || userPlan === "special") && (
+  <label
+  className="flex cursor-pointer items-center justify-center rounded-xl px-3 py-2 text-sm font-bold shadow-sm"
+  style={{
+    backgroundColor:
+      theme === "default" ? "#fce7f3" : "var(--main-bg)",
+    color:
+      theme === "default" ? "#db2777" : "var(--main-text)",
+    border: `1px solid ${
+      theme === "default" ? "#fbcfe8" : "var(--ring-color)"
+    }`,
+  }}
+>
+  画像を選択
+  <input
+    type="file"
+    accept="image/*"
+    onChange={async (e) => {
+      const file = e.target.files?.[0];
+      if (!file) return;
+
+      const url = await uploadImage(file);
+
+      if (url) {
+        setNewImageUrl(url);
+      }
+    }}
+    className="hidden"
+  />
+</label>
+)}
+
+
+
+{uploading && (
+  <p className="text-xs text-gray-400">
+    アップロード中...
+  </p>
+)}
+
+{newImageUrl?.startsWith("http") && (
+  <button
+    type="button"
+    onClick={() => setNewImageUrl("")}
+    className="text-xs text-red-500"
+  >
+    画像を削除
+  </button>
+)}
 
   <div className="flex gap-2">
     <select
@@ -459,6 +639,55 @@ onBlur={(e) => {
       : "絵文字"
   }
 />
+
+{editImageUrl?.startsWith("http") && (
+  <img
+    src={editImageUrl}
+    className="h-20 w-20 rounded-xl object-cover shadow"
+  />
+)}
+
+{(userPlan === "pro" || userPlan === "special") && (
+  <label
+  className="flex cursor-pointer items-center justify-center rounded-xl px-3 py-2 text-sm font-bold shadow-sm"
+  style={{
+    backgroundColor:
+      theme === "default" ? "#fce7f3" : "var(--main-bg)",
+    color:
+      theme === "default" ? "#db2777" : "var(--main-text)",
+    border: `1px solid ${
+      theme === "default" ? "#fbcfe8" : "var(--ring-color)"
+    }`,
+  }}
+>
+  画像を選択
+  <input
+    type="file"
+    accept="image/*"
+    onChange={async (e) => {
+      const file = e.target.files?.[0];
+      if (!file) return;
+
+      const url = await uploadImage(file);
+
+      if (url) {
+        setEditImageUrl(url);
+      }
+    }}
+    className="hidden"
+  />
+</label>
+)}
+
+{editImageUrl?.startsWith("http") && (
+  <button
+    type="button"
+    onClick={() => setEditImageUrl("")}
+    className="text-xs text-red-500"
+  >
+    画像を削除
+  </button>
+)}
 
 <select
   value={editCategory}
