@@ -50,6 +50,9 @@ const [userRole, setUserRole] = useState<"admin" | "user">("user");
 const [theme, setTheme] = useState("default");
 const [uploading, setUploading] = useState(false);
 
+const [groups, setGroups] = useState<any[]>([]);
+const [selectedGroupId, setSelectedGroupId] = useState("personal");
+
 useEffect(() => {
   const savedTheme = localStorage.getItem("theme");
   if (savedTheme) {
@@ -89,6 +92,7 @@ const masterLimit = getLimitByPlan(userRole, userPlan, "master");
   useEffect(() => {
     if (userId) {
       fetchMasterItems();
+      fetchGroups();
     }
   }, [userId]);
 
@@ -108,6 +112,31 @@ const masterLimit = getLimitByPlan(userRole, userPlan, "master");
     }
 
     setLoading(false);
+  };
+
+  const fetchGroups = async () => {
+    if (!userId) return;
+  
+    const { data, error } = await supabase
+      .from("group_members")
+      .select(`
+        group_id,
+        groups (
+          id,
+          name
+        )
+      `)
+      .eq("user_id", userId);
+  
+    if (error) {
+      console.error("グループ取得エラー:", error);
+      return;
+    }
+  
+    const formatted =
+      data?.map((item: any) => item.groups).filter(Boolean) || [];
+  
+    setGroups(formatted);
   };
 
   const addMasterItem = async () => {
@@ -241,6 +270,37 @@ const deleteMasterItem = async (id: number) => {
   } else {
     setItems((prev) => prev.filter((item) => item.id !== id));
   }
+};
+
+const addToShoppingList = async (item: MasterItem) => {
+  if (!userId) return;
+
+  const payload = {
+    user_id: userId,
+
+    group_id:
+      selectedGroupId === "personal"
+        ? null
+        : selectedGroupId,
+
+    name: item.name,
+    category: item.category ?? "その他",
+    note: "",
+    checked: false,
+    image_url: item.image_url ?? "🛒",
+  };
+
+  const { error } = await supabase
+    .from("shopping_items")
+    .insert([payload]);
+
+  if (error) {
+    console.error("追加エラー:", error);
+    alert(`リスト追加に失敗しました: ${error.message}`);
+    return;
+  }
+
+  alert("リストに追加しました");
 };
 
 const compressImage = async (file: File) => {
@@ -558,6 +618,48 @@ style={{
   </div>
 </div>
 
+<div
+  className="mb-4 rounded-2xl bg-white/70 p-3 shadow-sm"
+  style={{
+    border: `1px solid ${
+      theme === "default" ? "#fbcfe8" : "var(--ring-color)"
+    }`,
+  }}
+>
+  <p className="mb-2 text-xs font-bold text-gray-500">
+    追加先リスト
+  </p>
+
+<select
+  value={selectedGroupId}
+  onChange={(e) => setSelectedGroupId(e.target.value)}
+  className="rounded-xl border bg-white px-3 py-2 text-base text-gray-700 outline-none"
+  style={{
+    borderColor:
+      theme === "default"
+        ? "#fbcfe8"
+        : "var(--ring-color)",
+  }}
+>
+  <option value="personal">
+    個人リスト
+  </option>
+
+  {groups.map((group: any) => (
+    <option
+      key={group.id}
+      value={group.id}
+    >
+      {group.name}
+    </option>
+  ))}
+</select>
+
+<p className="mt-2 text-xs text-gray-400">
+    「＋追加」を押すと、選択中のリストに追加されます。
+  </p>
+</div>
+
         {loading ? (
           <p className="text-gray-500">読み込み中...</p>
         ) : items.length === 0 ? (
@@ -789,6 +891,13 @@ onBlur={(e) => {
 </div>
          
         </div>
+
+        <button
+  onClick={() => addToShoppingList(item)}
+  className="text-green-500"
+>
+  ＋追加
+</button>
 
         <div className="flex gap-2">
         <button
