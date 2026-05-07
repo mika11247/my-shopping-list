@@ -43,6 +43,15 @@ const [editYomi, setEditYomi] = useState("");
 const [userPlan, setUserPlan] = useState<string>("free");
 const [userRole, setUserRole] = useState<"admin" | "user">("user");
 
+const [theme, setTheme] = useState("default");
+
+useEffect(() => {
+  const savedTheme = localStorage.getItem("theme");
+  if (savedTheme) {
+    setTheme(savedTheme);
+  }
+}, []);
+
 const masterLimit = getLimitByPlan(userRole, userPlan, "master");
 
   useEffect(() => {
@@ -199,11 +208,18 @@ setNewCategory("その他");
   };
 
   return (
-    <main className="min-h-screen bg-pink-50 p-4">
+    <main
+  className={`min-h-screen p-4 ${theme} master`}
+  style={{ background: "var(--bg-gradient)" }}
+>
       <div className="mx-auto max-w-md rounded-3xl bg-white p-5 shadow">
         <div className="mb-4 flex items-start justify-between gap-4">
   <div>
-    <h1 className="text-2xl font-bold text-pink-600">My items</h1>
+    <h1 className="text-2xl font-bold"
+style={{
+  color:
+    theme === "default" ? "#db2777" : "var(--main-text)",
+}}>My items</h1>
     <p className="mt-1 text-sm text-gray-500">
       あなたが追加したアイテムを編集・整理できます。
     </p>
@@ -211,7 +227,16 @@ setNewCategory("その他");
 
   <button
     onClick={() => window.location.href = "/"}
-    className="rounded-full bg-white px-3 py-1 text-xs text-gray-600 shadow ring-1 ring-pink-100"
+    className="rounded-full px-3 py-1 text-xs shadow"
+style={{
+  backgroundColor:
+    theme === "default" ? "#ffffff" : "var(--sub-bg)",
+  color:
+    theme === "default" ? "#525252" : "var(--main-text)",
+  border: `1px solid ${
+    theme === "default" ? "#fbcfe8" : "var(--ring-color)"
+  }`,
+}}
   >
     戻る
   </button>
@@ -227,7 +252,19 @@ setNewCategory("その他");
       }
     }}
     placeholder="アイテム追加"
-    className="rounded-xl border border-pink-100 bg-white px-3 py-2 text-base text-gray-700"
+    className="rounded-xl border bg-white px-3 py-2 text-base text-gray-700 outline-none"
+style={{
+  borderColor:
+    theme === "default" ? "#fbcfe8" : "var(--ring-color)",
+}}
+onFocus={(e) => {
+  e.target.style.borderColor =
+    theme === "default" ? "#ec4899" : "var(--main-color)";
+}}
+onBlur={(e) => {
+  e.target.style.borderColor =
+    theme === "default" ? "#fbcfe8" : "var(--ring-color)";
+}}
   />
 
   {/* 👇これ追加🔥 */}
@@ -235,14 +272,38 @@ setNewCategory("その他");
     value={newYomi}
     onChange={(e) => setNewYomi(e.target.value)}
     placeholder="よみ（ひらがな／空欄でもOK）"
-    className="rounded-xl border border-pink-100 bg-white px-3 py-2 text-base text-gray-700"
+    className="rounded-xl border bg-white px-3 py-2 text-base text-gray-700 outline-none"
+style={{
+  borderColor:
+    theme === "default" ? "#fbcfe8" : "var(--ring-color)",
+}}
+onFocus={(e) => {
+  e.target.style.borderColor =
+    theme === "default" ? "#ec4899" : "var(--main-color)";
+}}
+onBlur={(e) => {
+  e.target.style.borderColor =
+    theme === "default" ? "#fbcfe8" : "var(--ring-color)";
+}}
   />
 
   <div className="flex gap-2">
     <select
       value={newCategory}
       onChange={(e) => setNewCategory(e.target.value)}
-      className="flex-1 rounded-xl border border-pink-100 bg-white px-3 py-2 text-base text-gray-700"
+      className="rounded-xl border bg-white px-3 py-2 text-base text-gray-700 outline-none"
+style={{
+  borderColor:
+    theme === "default" ? "#fbcfe8" : "var(--ring-color)",
+}}
+onFocus={(e) => {
+  e.target.style.borderColor =
+    theme === "default" ? "#ec4899" : "var(--main-color)";
+}}
+onBlur={(e) => {
+  e.target.style.borderColor =
+    theme === "default" ? "#fbcfe8" : "var(--ring-color)";
+}}
     >
       {categories.map((cat) => (
         <option key={cat} value={cat}>
@@ -253,7 +314,11 @@ setNewCategory("その他");
 
     <button
       onClick={addMasterItem}
-      className="rounded-xl bg-pink-500 px-4 py-2 text-sm text-white"
+      className="rounded-xl px-4 py-2 text-sm text-white"
+style={{
+  backgroundColor:
+    theme === "default" ? "#ec4899" : "var(--main-color)",
+}}
     >
       追加
     </button>
@@ -278,7 +343,14 @@ setNewCategory("その他");
             {items.map((item) => (
               <li
   key={item.id}
-  className="rounded-2xl bg-pink-50 p-4 shadow-sm ring-1 ring-pink-100"
+  className="rounded-2xl p-4 shadow-sm"
+style={{
+  backgroundColor:
+    theme === "default" ? "#fdf2f8" : "var(--sub-bg)",
+  border: `1px solid ${
+    theme === "default" ? "#fbcfe8" : "var(--ring-color)"
+  }`,
+}}
 >
   <div className="flex flex-col gap-3">
     {editingId === item.id ? (
@@ -287,28 +359,64 @@ setNewCategory("その他");
           <input
             value={editName}
             onChange={(e) => setEditName(e.target.value)}
-            className="rounded-xl border border-pink-200 bg-white px-3 py-2 text-base text-gray-800 placeholder:text-gray-400"
+            className="rounded-xl border bg-white px-3 py-2 text-base text-gray-800 outline-none"
+style={{
+  borderColor:
+    theme === "default" ? "#fbcfe8" : "var(--ring-color)",
+}}
+onFocus={(e) => {
+  e.target.style.borderColor =
+    theme === "default" ? "#ec4899" : "var(--main-color)";
+}}
+onBlur={(e) => {
+  e.target.style.borderColor =
+    theme === "default" ? "#fbcfe8" : "var(--ring-color)";
+}}
             placeholder="アイテム名"
           />
 
           <input
             value={editYomi}
             onChange={(e) => setEditYomi(e.target.value)}
-            className="rounded-xl border border-pink-200 bg-white px-3 py-2 text-base text-gray-800 placeholder:text-gray-400"
+            className="rounded-xl border bg-white px-3 py-2 text-base text-gray-800 outline-none"
+style={{
+  borderColor:
+    theme === "default" ? "#fbcfe8" : "var(--ring-color)",
+}}
+onFocus={(e) => {
+  e.target.style.borderColor =
+    theme === "default" ? "#ec4899" : "var(--main-color)";
+}}
+onBlur={(e) => {
+  e.target.style.borderColor =
+    theme === "default" ? "#fbcfe8" : "var(--ring-color)";
+}}
             placeholder="よみ"
           />
 
-          <select
-            value={editCategory}
-            onChange={(e) => setEditCategory(e.target.value)}
-            className="rounded-xl border border-pink-200 bg-white px-3 py-2 text-base text-gray-800"
-          >
-            {categories.map((cat) => (
-              <option key={cat} value={cat}>
-                {cat}
-              </option>
-            ))}
-          </select>
+<select
+  value={editCategory}
+  onChange={(e) => setEditCategory(e.target.value)}
+  className="rounded-xl border bg-white px-3 py-2 text-base text-gray-800 outline-none"
+  style={{
+    borderColor:
+      theme === "default" ? "#fbcfe8" : "var(--ring-color)",
+  }}
+  onFocus={(e) => {
+    e.target.style.borderColor =
+      theme === "default" ? "#ec4899" : "var(--main-color)";
+  }}
+  onBlur={(e) => {
+    e.target.style.borderColor =
+      theme === "default" ? "#fbcfe8" : "var(--ring-color)";
+  }}
+>
+  {categories.map((cat) => (
+    <option key={cat} value={cat}>
+      {cat}
+    </option>
+  ))}
+</select>
         </div>
 
         <div className="mt-2 flex justify-end gap-2">
@@ -356,17 +464,26 @@ setNewCategory("その他");
         </div>
 
         <div className="flex gap-2">
-          <button
-            onClick={() => {
-              setEditingId(item.id);
-              setEditName(item.name);
-              setEditYomi(item.yomi ?? "");
-              setEditCategory(item.category ?? "その他");
-            }}
-            className="rounded-full bg-pink-100 px-3 py-1 text-xs text-pink-600 shadow ring-1 ring-pink-200 hover:bg-pink-200"
-          >
-            編集
-          </button>
+        <button
+  onClick={() => {
+    setEditingId(item.id);
+    setEditName(item.name);
+    setEditYomi(item.yomi ?? "");
+    setEditCategory(item.category ?? "その他");
+  }}
+  className="rounded-full px-3 py-1 text-xs shadow"
+  style={{
+    backgroundColor:
+      theme === "default" ? "#fce7f3" : "var(--main-bg)",
+    color:
+      theme === "default" ? "#db2777" : "var(--main-text)",
+    border: `1px solid ${
+      theme === "default" ? "#fbcfe8" : "var(--ring-color)"
+    }`,
+  }}
+>
+  編集
+</button>
 
           <button
             onClick={() => {

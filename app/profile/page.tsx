@@ -21,6 +21,12 @@ export default function ProfilePage() {
   const [provider, setProvider] = useState("");
 
   const [userPlan, setUserPlan] = useState<string>("free");
+  const [theme, setTheme] = useState("default");
+
+  const changeTheme = (newTheme: string) => {
+    setTheme(newTheme);
+    localStorage.setItem("theme", newTheme);
+  };
 
   const isGoogleUser = provider === "google";
 
@@ -212,12 +218,31 @@ router.push("/login?withdraw=1");
     fetchProfile();
   }, []);
 
+  useEffect(() => {
+    const savedTheme = localStorage.getItem("theme");
+    if (savedTheme) {
+      setTheme(savedTheme);
+    }
+  }, []);
+
   return (
-    <main className="min-h-screen bg-gradient-to-b from-lime-50 to-white p-4">
+    <main
+  className={`min-h-screen p-4 ${theme}`}
+  style={{
+    background:
+      theme === "default"
+        ? "linear-gradient(to bottom, #f7fee7, #ffffff)"
+        : "var(--bg-gradient)",
+  }}
+>
       <div className="mx-auto max-w-xl">
         <div className="mb-5 flex items-start justify-between gap-4">
           <div>
-            <h1 className="text-2xl font-bold text-lime-700">My Page</h1>
+            <h1 className="text-2xl font-bold"
+style={{
+  color:
+    theme === "default" ? "#4d7c0f" : "var(--main-text)",
+}}>My Page</h1>
             <p className="mt-1 text-sm text-gray-500">
               アカウント情報と利用状況を確認できます。
             </p>
@@ -225,16 +250,36 @@ router.push("/login?withdraw=1");
 
           <button
             onClick={() => router.push("/")}
-            className="rounded-full bg-white px-3 py-1 text-xs text-gray-600 shadow ring-1 ring-lime-100"
+            className="rounded-full px-3 py-1 text-xs shadow"
+style={{
+  backgroundColor:
+    theme === "default" ? "#ffffff" : "var(--sub-bg)",
+  color:
+    theme === "default" ? "#525252" : "var(--main-text)",
+  border: `1px solid ${
+    theme === "default" ? "#d9f99d" : "var(--ring-color)"
+  }`,
+}}
           >
             戻る
           </button>
         </div>
 
         {message && (
-          <div className="mb-4 rounded-2xl bg-lime-100 px-4 py-3 text-sm font-bold text-lime-700 ring-1 ring-lime-200">
-            {message}
-          </div>
+          <div
+          className="mb-4 rounded-2xl px-4 py-3 text-sm font-bold"
+          style={{
+            backgroundColor:
+              theme === "default" ? "#ecfccb" : "var(--sub-bg)",
+            color:
+              theme === "default" ? "#4d7c0f" : "var(--main-text)",
+            border: `1px solid ${
+              theme === "default" ? "#d9f99d" : "var(--ring-color)"
+            }`,
+          }}
+        >
+          {message}
+        </div>
         )}
 
         {loading ? (
@@ -242,8 +287,19 @@ router.push("/login?withdraw=1");
         ) : (
           
           <div className="space-y-4">
-            <section className="rounded-2xl bg-white p-4 shadow ring-1 ring-lime-100">
-              <p className="text-sm font-bold text-lime-700">アカウント</p>
+           <section
+  className="rounded-2xl bg-white p-4 shadow"
+  style={{
+    border: `1px solid ${
+      theme === "default" ? "#d9f99d" : "var(--ring-color)"
+    }`,
+  }}
+>
+              <p className="text-sm font-bold"
+style={{
+  color:
+    theme === "default" ? "#4d7c0f" : "var(--main-text)",
+}}>アカウント</p>
 
               <div className="mt-4 space-y-4">
                 <div>
@@ -251,14 +307,30 @@ router.push("/login?withdraw=1");
                     表示名
                   </label>
                   <div className="flex gap-2">
-                    <input
-                      value={displayName}
-                      onChange={(e) => setDisplayName(e.target.value)}
-                      className="flex-1 rounded-xl border border-lime-200 px-3 py-2 text-base outline-none focus:border-lime-500"
-                    />
+                  <input
+  value={displayName}
+  onChange={(e) => setDisplayName(e.target.value)}
+  className="flex-1 rounded-xl border px-3 py-2 text-base outline-none"
+  style={{
+    borderColor:
+      theme === "default" ? "#bef264" : "var(--ring-color)",
+  }}
+  onFocus={(e) => {
+    e.target.style.borderColor =
+      theme === "default" ? "#84cc16" : "var(--main-color)";
+  }}
+  onBlur={(e) => {
+    e.target.style.borderColor =
+      theme === "default" ? "#bef264" : "var(--ring-color)";
+  }}
+/>
                     <button
                       onClick={updateDisplayName}
-                      className="rounded-xl bg-lime-500 px-3 py-2 text-xs font-bold text-white"
+                      className="rounded-xl px-3 py-2 text-xs font-bold text-white"
+style={{
+  backgroundColor:
+    theme === "default" ? "#84cc16" : "var(--main-color)",
+}}
                     >
                       保存
                     </button>
@@ -278,14 +350,31 @@ router.push("/login?withdraw=1");
         メールアドレス
       </label>
       <div className="flex gap-2">
-        <input
-          value={newEmail}
-          onChange={(e) => setNewEmail(e.target.value)}
-          className="flex-1 rounded-xl border border-lime-200 px-3 py-2 text-base outline-none focus:border-lime-500"
-        />
+      <input
+  value={newEmail}
+  onChange={(e) => setNewEmail(e.target.value)}
+  className="flex-1 rounded-xl border px-3 py-2 text-base text-gray-800 placeholder:text-gray-400 outline-none"
+  style={{
+    borderColor:
+      theme === "default" ? "#bef264" : "var(--ring-color)",
+  }}
+  onFocus={(e) => {
+    e.target.style.borderColor =
+      theme === "default" ? "#84cc16" : "var(--main-color)";
+  }}
+  onBlur={(e) => {
+    e.target.style.borderColor =
+      theme === "default" ? "#bef264" : "var(--ring-color)";
+  }}
+/>
         <button
           onClick={updateEmail}
-          className="rounded-xl bg-lime-500 px-3 py-2 text-xs font-bold text-white"
+          className="rounded-xl px-3 py-2 text-xs font-bold text-white"
+style={{
+  backgroundColor:
+    theme === "default" ? "#84cc16" : "var(--main-color)",
+}}
+          
         >
           変更
         </button>
@@ -296,11 +385,22 @@ router.push("/login?withdraw=1");
     </div>
 
     {/* パスワード変更 */}
-    <div className="rounded-2xl bg-lime-50 p-3 ring-1 ring-lime-100">
+    <div className="rounded-2xl p-3"
+style={{
+  backgroundColor:
+    theme === "default" ? "#f7fee7" : "var(--sub-bg)",
+  border: `1px solid ${
+    theme === "default" ? "#d9f99d" : "var(--ring-color)"
+  }`,
+}}>
       <p className="text-xs text-gray-500">パスワード</p>
       <button
         onClick={sendPasswordResetEmail}
-        className="mt-2 rounded-full bg-lime-500 px-4 py-2 text-xs font-bold text-white"
+        className="mt-2 rounded-full px-4 py-2 text-xs font-bold text-white"
+style={{
+  backgroundColor:
+    theme === "default" ? "#84cc16" : "var(--main-color)",
+}}
       >
         パスワード再設定メールを送る
       </button>
@@ -308,7 +408,14 @@ router.push("/login?withdraw=1");
   </>
 )}
 
-                <div className="rounded-2xl bg-lime-50 p-3 ring-1 ring-lime-100">
+                <div className="rounded-2xl p-3"
+style={{
+  backgroundColor:
+    theme === "default" ? "#f7fee7" : "var(--sub-bg)",
+  border: `1px solid ${
+    theme === "default" ? "#d9f99d" : "var(--ring-color)"
+  }`,
+}}>
                   <p className="text-xs text-gray-500">会員状況</p>
 
                   <p className={`mt-1 text-sm font-bold ${getPlanColor(userPlan)}`}>
@@ -319,63 +426,187 @@ router.push("/login?withdraw=1");
               </div>
             </section>
 
-            <section className="rounded-2xl bg-white p-4 shadow ring-1 ring-lime-100">
-              <p className="mb-3 text-sm font-bold text-lime-700">利用状況</p>
+            <section
+  className="rounded-2xl bg-white p-4 shadow"
+  style={{
+    border: `1px solid ${
+      theme === "default" ? "#d9f99d" : "var(--ring-color)"
+    }`,
+  }}
+>
+  <p
+    className="mb-3 text-sm font-bold"
+    style={{
+      color: theme === "default" ? "#4d7c0f" : "var(--main-text)",
+    }}
+  >
+    利用状況
+  </p>
 
-              <div className="grid grid-cols-3 gap-3">
-                <div className="rounded-2xl bg-lime-50 p-3 text-center ring-1 ring-lime-100">
-                  <p className="text-xs text-gray-500">買い物リスト</p>
-                  <p className="mt-1 text-xl font-bold text-lime-700">
-                    {shoppingCount}件
-                  </p>
-                </div>
+  <div className="grid grid-cols-3 gap-3">
+    <div className="rounded-2xl bg-lime-50 p-3 text-center ring-1 ring-lime-100">
+      <p className="text-xs text-gray-500">買い物リスト</p>
+      <p className="mt-1 text-xl font-bold text-lime-700">
+        {shoppingCount}件
+      </p>
+    </div>
 
-                <div className="rounded-2xl bg-pink-50 p-3 text-center ring-1 ring-pink-100">
-                  <p className="text-xs text-gray-500">My items</p>
-                  <p className="mt-1 text-xl font-bold text-pink-600">
-                    {masterCount}件
-                  </p>
-                </div>
+    <div className="rounded-2xl bg-pink-50 p-3 text-center ring-1 ring-pink-100">
+      <p className="text-xs text-gray-500">My items</p>
+      <p className="mt-1 text-xl font-bold text-pink-600">
+        {masterCount}件
+      </p>
+    </div>
 
-                <div className="rounded-2xl bg-sky-50 p-3 text-center ring-1 ring-sky-100">
-                  <p className="text-xs text-gray-500">購入履歴</p>
-                  <p className="mt-1 text-xl font-bold text-sky-600">
-                    {historyCount}件
-                  </p>
-                </div>
-              </div>
-            </section>
+    <div className="rounded-2xl bg-sky-50 p-3 text-center ring-1 ring-sky-100">
+      <p className="text-xs text-gray-500">購入履歴</p>
+      <p className="mt-1 text-xl font-bold text-sky-600">
+        {historyCount}件
+      </p>
+    </div>
+  </div>
+</section>
 
-            <section className="rounded-2xl bg-white p-4 shadow ring-1 ring-lime-100">
-              <p className="mb-3 text-sm font-bold text-lime-700">メニュー</p>
+{(userPlan === "pro" || userPlan === "special") && (
+  <section
+    className="rounded-2xl bg-white p-4 shadow"
+    style={{
+      border: `1px solid ${
+        theme === "default" ? "#d9f99d" : "var(--ring-color)"
+      }`,
+    }}
+  >
+    <p
+      className="mb-4 text-sm font-bold"
+      style={{
+        color: theme === "default" ? "#4d7c0f" : "var(--main-text)",
+      }}
+    >
+      設定
+    </p>
+
+    <div className="space-y-4">
+      <div>
+        <p className="mb-2 text-xs text-gray-500">カラーテーマ</p>
+
+        <div className="flex flex-wrap gap-2">
+          {[
+            ["default", "デフォルト"],
+            ["lime", "ライム"],
+            ["pink", "ピンク"],
+            ["sky", "スカイ"],
+            ["orange", "オレンジ"],
+            ["purple", "パープル"],
+          ].map(([value, label]) => (
+            <button
+              key={value}
+              onClick={() => changeTheme(value)}
+              className="rounded-full px-3 py-1 text-xs font-bold"
+              style={{
+                backgroundColor:
+                  theme === value
+                    ? theme === "default"
+                      ? "#e5e7eb"
+                      : "var(--main-bg)"
+                    : "#f3f4f6",
+                color:
+                  theme === value
+                    ? theme === "default"
+                      ? "#374151"
+                      : "var(--main-text)"
+                    : "#6b7280",
+                border: `2px solid ${
+                  theme === value
+                    ? theme === "default"
+                      ? "#9ca3af"
+                      : "var(--main-color)"
+                    : "transparent"
+                }`,
+              }}
+            >
+              {theme === value ? `${label} ✓` : label}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      <button
+        className="w-full rounded-full px-4 py-2 text-sm font-bold"
+        style={{
+          backgroundColor:
+            theme === "default" ? "#e0f2fe" : "var(--main-bg)",
+          color: theme === "default" ? "#0369a1" : "var(--main-text)",
+        }}
+      >
+        文字サイズを設定する
+      </button>
+    </div>
+  </section>
+)}
+
+<section
+  className="rounded-2xl bg-white p-4 shadow"
+  style={{
+    border: `1px solid ${
+      theme === "default" ? "#d9f99d" : "var(--ring-color)"
+    }`,
+  }}
+>
+              <p className="text-sm font-bold"
+style={{
+  color:
+    theme === "default" ? "#4d7c0f" : "var(--main-text)",
+}}>メニュー</p>
 
               <div className="space-y-2">
-                <button
-                  onClick={() => router.push("/")}
-                  className="w-full rounded-full bg-lime-100 px-4 py-2 text-sm font-bold text-lime-700"
-                >
-                  お買い物リストへ戻る
-                </button>
+              <button
+  onClick={() => router.push("/")}
+  className="w-full rounded-full px-4 py-2 text-sm font-bold"
+  style={{
+    backgroundColor:
+      theme === "default" ? "#ecfccb" : "var(--sub-bg)",
+    color:
+      theme === "default" ? "#4d7c0f" : "var(--main-text)",
+  }}
+>
+  お買い物リストへ戻る
+</button>
 
-                <button
-                  onClick={() => router.push("/master")}
-                  className="w-full rounded-full bg-pink-100 px-4 py-2 text-sm font-bold text-pink-600"
-                >
-                  My items を編集する
-                </button>
+<button
+  onClick={() => router.push("/master")}
+  className="w-full rounded-full px-4 py-2 text-sm font-bold"
+  style={{
+    backgroundColor:
+      theme === "default" ? "#fce7f3" : "var(--sub-bg)",
+    color:
+      theme === "default" ? "#be185d" : "var(--main-text)",
+  }}
+>
+  My items を編集する
+</button>
 
-                <button
-                  onClick={() => router.push("/history")}
-                  className="w-full rounded-full bg-sky-100 px-4 py-2 text-sm font-bold text-sky-600"
-                >
-                  購入履歴を見る
-                </button>
+<button
+  onClick={() => router.push("/history")}
+  className="w-full rounded-full px-4 py-2 text-sm font-bold"
+  style={{
+    backgroundColor:
+      theme === "default" ? "#e0f2fe" : "var(--sub-bg)",
+    color:
+      theme === "default" ? "#0369a1" : "var(--main-text)",
+  }}
+>
+  購入履歴を見る
+</button>
               </div>
             </section>
 
             <button
               onClick={handleLogout}
-              className="w-full rounded-full bg-lime-600 px-4 py-3 text-sm font-bold text-white shadow"
+              className="w-full rounded-full px-4 py-3 text-sm font-bold text-white shadow"
+style={{
+  backgroundColor:
+    theme === "default" ? "#65a30d" : "var(--main-color)",
+}}
             >
               ログアウト
             </button>

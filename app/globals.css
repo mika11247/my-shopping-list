@@ -1,8 +1,108 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --bg-gradient: #ffffff;
+  --main-color: #84cc16;
+  --main-bg: #ecfccb;
+  --main-text: #3f6212;
+  --sub-bg: #f3f4f6;
+  --ring-color: #d9f99d;
+}
+
+/* default × ページ */
+.default.home {
+  --bg-gradient: #ffffff;
+}
+
+.default.profile {
+  --bg-gradient: linear-gradient(to bottom, #f7fee7, #ffffff);
+  --main-color: #84cc16;
+  --main-bg: #ecfccb;
+  --main-text: #3f6212;
+  --sub-bg: #f7fee7;
+  --ring-color: #d9f99d;
+}
+
+.default.master {
+  --bg-gradient: linear-gradient(to bottom, #ffe4e6, #ffffff);
+  --main-color: #ec4899;
+  --main-bg: #fce7f3;
+  --main-text: #db2777;
+  --sub-bg: #fdf2f8;
+  --ring-color: #fbcfe8;
+}
+
+.default.history {
+  --bg-gradient: linear-gradient(to bottom, #e0f2fe, #ffffff);
+  --main-color: #0ea5e9;
+  --main-bg: #e0f2fe;
+  --main-text: #0284c7;
+  --sub-bg: #f0f9ff;
+  --ring-color: #bae6fd;
+}
+
+.default.guide {
+  --bg-gradient: linear-gradient(to bottom, #fed7aa, #ffffff);
+  --main-color: #f97316;
+  --main-bg: #ffedd5;
+  --main-text: #ea580c;
+  --sub-bg: #fff7ed;
+  --ring-color: #fed7aa;
+}
+
+.default.privacy {
+  --bg-gradient: linear-gradient(to bottom, #e9d5ff, #ffffff);
+  --main-color: #a855f7;
+  --main-bg: #f3e8ff;
+  --main-text: #9333ea;
+  --sub-bg: #faf5ff;
+  --ring-color: #e9d5ff;
+}
+
+/* 有料テーマ */
+.lime {
+  --bg-gradient: linear-gradient(to bottom, #ecfccb, #ffffff);
+  --main-color: #84cc16;
+  --main-bg: #ecfccb;
+  --main-text: #3f6212;
+  --sub-bg: #ecfccb;
+  --ring-color: #d9f99d;
+}
+
+.pink {
+  --bg-gradient: linear-gradient(to bottom, #ffe4e6, #ffffff);
+  --main-color: #ec4899;
+  --main-bg: #fce7f3;
+  --main-text: #db2777;
+  --sub-bg: #ffe4e6;
+  --ring-color: #fbcfe8;
+}
+
+.sky {
+  --bg-gradient: linear-gradient(to bottom, #e0f2fe, #ffffff);
+  --main-color: #0ea5e9;
+  --main-bg: #e0f2fe;
+  --main-text: #0284c7;
+  --sub-bg: #e0f2fe;
+  --ring-color: #bae6fd;
+}
+
+.orange {
+  --bg-gradient: linear-gradient(to bottom, #fed7aa, #ffffff);
+  --main-color: #f97316;
+  --main-bg: #ffedd5;
+  --main-text: #ea580c;
+  --sub-bg: #fed7aa;
+  --ring-color: #fed7aa;
+}
+
+.purple {
+  --bg-gradient: linear-gradient(to bottom, #e9d5ff, #ffffff);
+  --main-color: #a855f7;
+  --main-bg: #f3e8ff;
+  --main-text: #9333ea;
+  --sub-bg: #e9d5ff;
+  --ring-color: #e9d5ff;
 }
 
 @theme inline {

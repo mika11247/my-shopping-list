@@ -84,6 +84,7 @@ const [userRole, setUserRole] = useState<"admin" | "user">("user");
 const [userPlan, setUserPlan] = useState<string>("free");
 const [groupOwnerPlan, setGroupOwnerPlan] = useState<string>("free");
 const [groupOwnerRole, setGroupOwnerRole] = useState<"admin" | "user">("user");
+const [theme, setTheme] = useState("default");
 
 const appUrl = "https://my-shopping-list-vxll.vercel.app";
 
@@ -158,6 +159,13 @@ const cancelInvitation = async (inviteId: number) => {
   await supabase.auth.signOut();
   window.location.href = "/login";
 };
+
+useEffect(() => {
+  const savedTheme = localStorage.getItem("theme");
+  if (savedTheme) {
+    setTheme(savedTheme);
+  }
+}, []);
 
 useEffect(() => {
   const savedMode = localStorage.getItem("shoppingListMode");
@@ -1140,7 +1148,10 @@ await supabase
 
   return (
     
-    <main className="min-h-screen bg-neutral-50 px-4 py-8">
+    <main
+  className={`min-h-screen p-4 ${theme} home`}
+  style={{ background: "var(--bg-gradient)" }}
+>
       <div className="mx-auto max-w-xl">
         <header className="mb-6">
   <div className="mb-4 flex items-start justify-between gap-4">
@@ -1160,7 +1171,16 @@ await supabase
 
     <button
       onClick={handleLogout}
-      className="rounded-xl bg-neutral-200 px-3 py-2 text-sm text-neutral-700"
+      className="rounded-xl px-3 py-2 text-sm"
+style={{
+  backgroundColor:
+    theme === "default" ? "#e5e7eb" : "var(--main-bg)",
+  color:
+    theme === "default" ? "#374151" : "var(--main-text)",
+  border: `1px solid ${
+    theme === "default" ? "#d1d5db" : "var(--ring-color)"
+  }`,
+}}
     >
       ログアウト
     </button>
@@ -1218,7 +1238,16 @@ await supabase
 <section className="mb-4 space-y-4">
 
 {/* 表示モード */}
-<div className="rounded-2xl bg-white p-4 shadow-sm ring-1 ring-neutral-200">
+<div
+  className="rounded-2xl bg-white p-4 shadow-sm"
+  style={{
+    border: `1px solid ${
+      theme === "default"
+        ? "#e5e7eb"
+        : "var(--ring-color)"
+    }`,
+  }}
+>
   <p className="mb-2 text-sm font-medium text-neutral-700">
     表示モード
   </p>
@@ -1267,7 +1296,16 @@ await supabase
 
 {/* 共有管理 */}
 {mode === "group" && (
-  <div className="rounded-2xl bg-white p-4 shadow-sm ring-1 ring-neutral-200">
+  <div
+  className="rounded-2xl bg-white p-4 shadow-sm"
+  style={{
+    border: `1px solid ${
+      theme === "default"
+        ? "#e5e7eb"
+        : "var(--ring-color)"
+    }`,
+  }}
+>
     <button
       type="button"
       onClick={() => setIsShareManageOpen(!isShareManageOpen)}
@@ -1467,7 +1505,15 @@ await supabase
   </button>
 </div>
 
-        <section className="mb-6 rounded-2xl bg-white p-4 shadow-sm ring-1 ring-neutral-200">
+        <section className="rounded-2xl bg-white p-4 shadow-sm"
+  style={{
+    border: `1px solid ${
+      theme === "default"
+        ? "#e5e7eb"
+        : "var(--ring-color)"
+    }`,
+  }}
+>
           <label className="mb-2 block text-sm font-medium text-neutral-700">
             アイテムを検索
           </label>
@@ -1489,7 +1535,19 @@ await supabase
       });
     }
   }}
-  className="flex-1 rounded-xl border border-neutral-300 px-4 py-3 text-base text-gray-800 placeholder:text-gray-400 outline-none focus:border-neutral-500"
+  className="flex-1 rounded-xl border px-4 py-3 text-base text-gray-800 outline-none"
+style={{
+  borderColor:
+    theme === "default" ? "#d1d5db" : "var(--ring-color)",
+}}
+onFocus={(e) => {
+  e.target.style.borderColor =
+    theme === "default" ? "#6b7280" : "var(--main-color)";
+}}
+onBlur={(e) => {
+  e.target.style.borderColor =
+    theme === "default" ? "#d1d5db" : "var(--ring-color)";
+}}
 />
 
   <button
@@ -1505,7 +1563,11 @@ await supabase
         isManual: false,
       });
     }}
-    className="rounded-xl bg-blue-500 px-4 py-3 text-sm text-white"
+    className="rounded-xl px-4 py-3 text-sm text-white"
+style={{
+  backgroundColor:
+    theme === "default" ? "#3b82f6" : "var(--main-color)",
+}}
   >
     追加
   </button>
@@ -1601,7 +1663,7 @@ await supabase
 )}
         </section>
 
-        <section className="space-y-4">
+        <section className="mt-6 space-y-4">
   {shoppingItems.length === 0 ? (
     <p className="rounded-2xl bg-white p-4 text-sm text-neutral-400 shadow-sm ring-1 ring-neutral-200">
       まだありません
@@ -1612,7 +1674,12 @@ await supabase
       .map(({ category, items }) => (
         <div
           key={category}
-          className="rounded-2xl bg-white p-4 shadow-sm ring-1 ring-neutral-200"
+          className="rounded-2xl bg-white p-4 shadow-sm"
+style={{
+  border: `1px solid ${
+    theme === "default" ? "#e5e7eb" : "var(--ring-color)"
+  }`,
+}}
         >
           <h2 className="mb-3 text-lg font-semibold text-neutral-800">
             {category}
@@ -1680,13 +1747,18 @@ await supabase
                         className="h-4 w-4"
                       />
 
-                      <div
-                        className={`flex h-10 w-10 items-center justify-center rounded-xl text-xl transition-all duration-300 ease-out motion-reduce:transition-none ${
-                          item.checked
-                            ? "bg-gray-100 opacity-50 scale-95"
-                            : "bg-lime-50 scale-100"
-                        }`}
-                      >
+<div
+  className="flex h-10 w-10 items-center justify-center rounded-xl text-xl transition-all duration-300 ease-out motion-reduce:transition-none"
+  style={{
+    backgroundColor: item.checked
+      ? "#f3f4f6"
+      : theme === "default"
+      ? "#ecfccb"
+      : "var(--sub-bg)",
+    opacity: item.checked ? 0.5 : 1,
+    transform: item.checked ? "scale(0.95)" : "scale(1)",
+  }}
+>
                         {item.image_url?.startsWith("http") ? (
                           <img
                             src={item.image_url}
