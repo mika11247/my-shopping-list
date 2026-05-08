@@ -1,5 +1,6 @@
 "use client";
 
+import Header from "@/components/Header";
 import { useEffect, useState } from "react";
 import { supabase } from "../../lib/supabase";
 import { categories } from "@/lib/categories";
@@ -53,7 +54,6 @@ const [uploading, setUploading] = useState(false);
 const [groups, setGroups] = useState<any[]>([]);
 const [selectedGroupId, setSelectedGroupId] = useState("personal");
 
-const [isMenuOpen, setIsMenuOpen] = useState(false);
 
 useEffect(() => {
   const savedTheme = localStorage.getItem("theme");
@@ -417,53 +417,33 @@ const compressImage = async (file: File) => {
   className={`min-h-screen p-4 ${theme} master`}
   style={{ background: "var(--bg-gradient)" }}
 >
-      <div className="mx-auto max-w-md rounded-3xl bg-white p-5 shadow">
-        <div className="mb-4 flex items-start justify-between gap-4">
-  <div>
-    <h1 className="text-2xl font-bold"
-style={{
-  color:
-    theme === "default" ? "#db2777" : "var(--main-text)",
-}}>My items</h1>
-    <p className="mt-1 text-sm text-gray-500">
-      あなたが追加したアイテムを編集・整理できます。
-    </p>
-  </div>
+<div className="mx-auto max-w-xl space-y-4">
+      <Header
+  title="マイアイテム 💖"
+  subtitle="My items"
+/>
 
-  <div className="flex items-center gap-2">
-  <button
-    type="button"
-    onClick={() => setIsMenuOpen(true)}
-    className="rounded-xl bg-white px-3 py-2 text-xs text-gray-600 shadow ring-1 ring-gray-200"
-  >
-    ☰
-  </button>
-
-  <button
-    onClick={() => window.location.href = "/"}
-    className="rounded-full px-3 py-1 text-xs shadow"
-    style={{
-      backgroundColor:
-        theme === "default"
-          ? "#ffffff"
-          : "var(--sub-bg)",
-      color:
-        theme === "default"
-          ? "#525252"
-          : "var(--main-text)",
-      border: `1px solid ${
-        theme === "default"
-          ? "#fbcfe8"
-          : "var(--ring-color)"
-      }`,
-    }}
-  >
-    戻る
-  </button>
-</div>
+<div className="mb-4">
+  <p className="text-sm leading-relaxed text-neutral-500">
+    よく使うアイテムを登録して、
+    かんたんに追加・整理できます。
+  </p>
 </div>
 
-        <div className="mb-4 flex flex-col gap-2">
+<div
+  className="mb-4 rounded-3xl bg-white p-4 shadow-sm"
+  style={{
+    border: `1px solid ${
+      theme === "default"
+        ? "#fbcfe8"
+        : "var(--ring-color)"
+    }`,
+  }}
+>
+  <div className="flex flex-col gap-2">
+  <p className="text-sm font-bold text-gray-500">
+  新規アイテム登録
+</p>
   <input
     value={newItem}
     onChange={(e) => setNewItem(e.target.value)}
@@ -610,9 +590,12 @@ onBlur={(e) => {
 }}
     >
       {categories.map((cat) => (
-        <option key={cat} value={cat}>
-          {cat}
-        </option>
+        <option
+        key={cat.name}
+        value={cat.name}
+      >
+        {cat.emoji} {cat.name}
+      </option>
       ))}
     </select>
 
@@ -636,8 +619,10 @@ style={{
   </div>
 </div>
 
+</div>
+
 <div
-  className="mb-4 rounded-2xl bg-white/70 p-3 shadow-sm"
+  className="mb-4 rounded-3xl bg-white/80 p-3 shadow-sm"
   style={{
     border: `1px solid ${
       theme === "default" ? "#fbcfe8" : "var(--ring-color)"
@@ -689,7 +674,7 @@ style={{
             {items.map((item) => (
               <li
   key={item.id}
-  className="rounded-2xl p-4 shadow-sm"
+  className="rounded-3xl p-4 shadow-sm"
 style={{
   backgroundColor:
     theme === "default" ? "#fdf2f8" : "var(--sub-bg)",
@@ -702,6 +687,7 @@ style={{
     {editingId === item.id ? (
       <>
         <div className="flex flex-col gap-2">
+        
           <input
             value={editName}
             onChange={(e) => setEditName(e.target.value)}
@@ -833,9 +819,12 @@ onBlur={(e) => {
   }}
 >
   {categories.map((cat) => (
-    <option key={cat} value={cat}>
-      {cat}
-    </option>
+    <option
+    key={cat.name}
+    value={cat.name}
+  >
+    {cat.emoji} {cat.name}
+  </option>
   ))}
 </select>
         </div>
@@ -959,56 +948,6 @@ onBlur={(e) => {
           </ul>
         )}
       </div>
-
-      {isMenuOpen && (
-  <div
-    className="fixed inset-0 z-50 bg-black/30"
-    onClick={() => setIsMenuOpen(false)}
-  >
-    <div
-      className="ml-auto h-full w-72 bg-white p-5 shadow-xl"
-      onClick={(e) => e.stopPropagation()}
-    >
-      <div className="mb-5 flex items-center justify-between">
-        <p className="text-lg font-bold text-gray-800">
-          メニュー
-        </p>
-
-        <button
-          type="button"
-          onClick={() => setIsMenuOpen(false)}
-          className="rounded-full bg-gray-100 px-3 py-1 text-gray-500"
-        >
-          ×
-        </button>
-      </div>
-
-      <div className="flex flex-col gap-2">
-        {[
-          ["TOP", "/"],
-          ["My page 👤", "/profile"],
-          ["My items 💖", "/master"],
-          ["履歴 🕒", "/history"],
-          ["ガイド ❓", "/guide"],
-          ["プライバシー 🔐", "/privacy"],
-          ["免責事項 ⚠️", "/disclaimer"],
-        ].map(([label, path]) => (
-          <button
-            key={path}
-            type="button"
-            onClick={() => {
-              setIsMenuOpen(false);
-              window.location.href = path;
-            }}
-            className="rounded-xl bg-gray-50 px-4 py-3 text-left text-sm font-medium text-gray-700 hover:bg-gray-100"
-          >
-            {label}
-          </button>
-        ))}
-      </div>
-    </div>
-  </div>
-)}
 
     </main>
   );

@@ -1,10 +1,12 @@
 "use client";
 
+import Header from "@/components/Header";
 import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/lib/supabase";
 import { useRouter } from "next/navigation";
 import { categories } from "@/lib/categories";
 import { getLimitByPlan } from "@/lib/planLimits";
+
 
 type ShoppingItem = {
   id: number;
@@ -57,7 +59,9 @@ export default function Home() {
   const [candidateItems, setCandidateItems] = useState<CandidateItem[]>([]);
   const [search, setSearch] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("その他");
-  const [mode, setMode] = useState<"personal" | "group">("personal");
+  const [mode, setMode] = useState<
+  "personal" | "group" | "all"
+>("personal");
   const [selectedGroupId, setSelectedGroupId] = useState("");
   const [newGroupName, setNewGroupName] = useState("");
   const [editGroupName, setEditGroupName] = useState("");
@@ -88,7 +92,7 @@ const [theme, setTheme] = useState("default");
 
 const [previewImage, setPreviewImage] = useState<string | null>(null);
 
-const [isMenuOpen, setIsMenuOpen] = useState(false);
+const [groups, setGroups] = useState<any[]>([]);
 
 const appUrl = "https://my-shopping-list-vxll.vercel.app";
 
@@ -201,6 +205,7 @@ useEffect(() => {
 useEffect(() => {
   if (!userId || !isModeLoaded) return;
 
+  fetchGroups();
   fetchItems();
   fetchCandidateItems();
   fetchUserMasterItems();
@@ -424,6 +429,31 @@ const groupLimit = getLimitByPlan(userRole, userPlan, "group");
   setCandidateItems(uniqueCandidates);
 };
 
+const fetchGroups = async () => {
+  if (!userId) return;
+
+  const { data, error } = await supabase
+    .from("group_members")
+    .select(`
+      group_id,
+      groups (
+        id,
+        name
+      )
+    `)
+    .eq("user_id", userId);
+
+  if (error) {
+    console.error("グループ取得エラー:", error);
+    return;
+  }
+
+  const formatted =
+    data?.map((item: any) => item.groups).filter(Boolean) || [];
+
+  setGroups(formatted);
+};
+
 const fetchItems = async () => {
   if (!userId) return;
 
@@ -432,14 +462,29 @@ const fetchItems = async () => {
     return;
   }
 
-  let query = supabase.from("shopping_items").select("*");
+  let query = supabase
+    .from("shopping_items")
+    .select("*");
 
   if (mode === "personal") {
     query = query
       .eq("user_id", userId)
       .is("group_id", null);
-  } else {
-    query = query.eq("group_id", selectedGroupId.trim());
+
+  } else if (mode === "group") {
+    query = query.eq(
+      "group_id",
+      selectedGroupId.trim()
+    );
+
+  } else if (mode === "all") {
+    const groupIds = groups.map(
+      (group: any) => group.id
+    );
+
+    query = query.or(
+      `and(user_id.eq.${userId},group_id.is.null),group_id.in.(${groupIds.join(",")})`
+    );
   }
 
   const { data, error } = await query
@@ -894,12 +939,17 @@ const filteredItems = candidateItems.filter((item) => {
   );
 });
 
-  const groupedItems = useMemo(() => {
-    return categories.map((category) => ({
-      category,
-      items: shoppingItems.filter((item) => item.category === category),
-    }));
-  }, [shoppingItems]);
+const groupedItems = useMemo(() => {
+  return categories.map((category) => ({
+    category: category.name,
+
+    categoryData: category,
+
+    items: shoppingItems.filter(
+      (item) => item.category === category.name
+    ),
+  }));
+}, [shoppingItems]);
 
   const addItem = async (item: {
   name: string;
@@ -1198,49 +1248,12 @@ await supabase
   style={{ background: "var(--bg-gradient)" }}
 >
       <div className="mx-auto max-w-xl">
-        <header className="mb-6">
-  <div className="mb-4 flex items-start justify-between gap-4">
-    <div>
-      <p className="text-sm text-neutral-500">My Shopping List</p>
-
-      <h1 className="text-3xl font-bold text-neutral-900">
-        お買い物リスト
-      </h1>
-
-      {displayName && (
-  <p className="mt-1 text-xs text-neutral-500">
-    ログイン中：{displayName}様
-  </p>
-)}
-    </div>
-
-    <div className="flex items-center gap-2">
-  <button
-    type="button"
-    onClick={() => setIsMenuOpen(true)}
-    className="rounded-xl bg-white px-3 py-2 text-sm text-gray-600 shadow ring-1 ring-gray-200"
-  >
-    ☰
-  </button>
-
-    <button
-      onClick={handleLogout}
-      className="rounded-xl px-3 py-2 text-sm"
-style={{
-  backgroundColor:
-    theme === "default" ? "#e5e7eb" : "var(--main-bg)",
-  color:
-    theme === "default" ? "#374151" : "var(--main-text)",
-  border: `1px solid ${
-    theme === "default" ? "#d1d5db" : "var(--ring-color)"
-  }`,
-}}
-    >
-      ログアウト
-    </button>
-  </div>
-  
-  </div>
+        
+      <Header
+  title="お買い物リスト 🛒"
+  subtitle="My Shopping List"
+  userName={displayName}
+/>
 
   <div className="mb-4 flex flex-wrap gap-2">
 
@@ -1292,69 +1305,88 @@ style={{
 
 </div>
 
-  <p className="mt-2 text-sm text-neutral-600">
-    よく使うアイテムを検索して、かんたんに追加できます
-    <span className="ml-1 text-xs text-neutral-400">（β版）</span>
+<div className="mb-5 mt-4">
+  <p className="text-base font-semibold text-neutral-700">
+    いつもの買い物を、もっとシンプルに。
   </p>
-</header>
+
+  <p className="mt-1 text-sm text-neutral-500">
+    よく使うアイテムをすばやく追加できます。
+    <span className="ml-1 text-xs text-neutral-400">
+      β版
+    </span>
+  </p>
+</div>
 
 <section className="mb-4 space-y-4">
 
 {/* 表示モード */}
 <div
-  className="rounded-2xl bg-white p-4 shadow-sm"
+  className="rounded-3xl bg-white p-4 shadow-sm"
   style={{
     border: `1px solid ${
-      theme === "default"
-        ? "#e5e7eb"
-        : "var(--ring-color)"
+      theme === "default" ? "#e5e7eb" : "var(--ring-color)"
     }`,
   }}
 >
-  <p className="mb-2 text-sm font-medium text-neutral-700">
+  <p className="mb-3 text-sm font-bold text-neutral-700">
     表示モード
   </p>
 
-  <div className="flex flex-wrap items-center gap-2">
+  <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
     <button
       type="button"
       onClick={() => setMode("personal")}
-      className={`rounded-lg px-3 py-2 text-sm ${
+      className={`rounded-2xl px-4 py-3 text-sm font-bold transition ${
         mode === "personal"
-          ? "bg-lime-500 text-white"
-          : "bg-neutral-200 text-neutral-700"
+          ? "bg-lime-500 text-white shadow"
+          : "bg-white text-neutral-600 ring-1 ring-neutral-200"
       }`}
     >
-      個人リスト
+      👤 個人リスト
     </button>
 
     <button
       type="button"
       onClick={() => setMode("group")}
-      className={`rounded-lg px-3 py-2 text-sm ${
+      className={`rounded-2xl px-4 py-3 text-sm font-bold transition ${
         mode === "group"
-          ? "bg-blue-500 text-white"
-          : "bg-neutral-200 text-neutral-700"
+          ? "bg-blue-500 text-white shadow"
+          : "bg-white text-neutral-600 ring-1 ring-neutral-200"
       }`}
     >
-      共有リスト
+      👥 共有リスト
     </button>
 
-    {mode === "group" && (
-      <select
-        value={selectedGroupId}
-        onChange={(e) => setSelectedGroupId(e.target.value)}
-        className="min-w-56 rounded-lg border border-neutral-300 px-3 py-2 text-sm text-gray-800"
+    {(userPlan === "special" || userPlan === "pro") && (
+      <button
+        type="button"
+        onClick={() => setMode("all")}
+        className={`rounded-2xl px-4 py-3 text-sm font-bold transition ${
+          mode === "all"
+            ? "bg-green-500 text-white shadow"
+            : "bg-white text-neutral-600 ring-1 ring-neutral-200"
+        }`}
       >
-        <option value="">グループを選択</option>
-        {ownedGroups.map((group) => (
-          <option key={group.id} value={group.id}>
-            {group.name}
-          </option>
-        ))}
-      </select>
+        📚 すべて
+      </button>
     )}
   </div>
+
+  {mode === "group" && (
+    <select
+      value={selectedGroupId}
+      onChange={(e) => setSelectedGroupId(e.target.value)}
+      className="mt-3 w-full rounded-2xl border border-neutral-200 bg-white px-4 py-3 text-sm text-gray-800 outline-none"
+    >
+      <option value="">グループを選択</option>
+      {ownedGroups.map((group) => (
+        <option key={group.id} value={group.id}>
+          {group.name}
+        </option>
+      ))}
+    </select>
+  )}
 </div>
 
 {/* 共有管理 */}
@@ -1369,6 +1401,7 @@ style={{
     }`,
   }}
 >
+
     <button
       type="button"
       onClick={() => setIsShareManageOpen(!isShareManageOpen)}
@@ -1559,16 +1592,22 @@ style={{
 )}
 </section>
 
-        <div className="mb-4 flex justify-end">
+<div className="mb-3 flex items-center justify-between">
+  <label className="block text-sm font-bold text-neutral-700">
+    アイテムを検索
+  </label>
+
   <button
     onClick={deleteCheckedItems}
-    className="rounded-xl bg-red-500 px-4 py-2 text-sm text-white"
+    className="rounded-full bg-red-50 px-4 py-2 text-xs font-bold text-red-500 shadow-sm ring-1 ring-red-100"
   >
-    チェック済みを削除
+    🗑 チェック済みを削除
   </button>
 </div>
 
-        <section className="rounded-2xl bg-white p-4 shadow-sm"
+{mode !== "all" ? (
+  <section
+  className="rounded-2xl bg-white p-4 shadow-sm"
   style={{
     border: `1px solid ${
       theme === "default"
@@ -1577,9 +1616,7 @@ style={{
     }`,
   }}
 >
-          <label className="mb-2 block text-sm font-medium text-neutral-700">
-            アイテムを検索
-          </label>
+          
 
           <div className="flex gap-2">
   <input
@@ -1652,9 +1689,9 @@ style={{
   className="mt-2 w-full rounded-xl border border-neutral-300 px-4 py-2 text-base text-gray-800 outline-none focus:border-neutral-500 focus:ring-2 focus:ring-neutral-200"
 >
   {categories.map((cat) => (
-    <option key={cat} value={cat}>
-      {cat}
-    </option>
+    <option key={cat.name} value={cat.name}>
+    {cat.emoji} {cat.name}
+  </option>
   ))}
 </select>
 
@@ -1734,6 +1771,22 @@ style={{
   </div>
 )}
         </section>
+) : (
+  <div
+    className="rounded-2xl bg-white p-4 text-sm text-gray-500 shadow-sm"
+    style={{
+      border: `1px solid ${
+        theme === "default"
+          ? "#e5e7eb"
+          : "var(--ring-color)"
+      }`,
+    }}
+  >
+    追加する場合は
+    「個人リスト」または
+    「共有リスト」を選択してください
+  </div>
+)}
 
         <section className="mt-6 space-y-4">
   {shoppingItems.length === 0 ? (
@@ -1743,19 +1796,30 @@ style={{
   ) : (
     groupedItems
       .filter(({ items }) => items.length > 0)
-      .map(({ category, items }) => (
+      .map(({ category, categoryData, items }) => (
         <div
-          key={category}
-          className="rounded-2xl bg-white p-4 shadow-sm"
+  key={category}
+  className="rounded-3xl bg-white p-4 shadow-sm"
 style={{
   border: `1px solid ${
     theme === "default" ? "#e5e7eb" : "var(--ring-color)"
   }`,
 }}
         >
-          <h2 className="mb-3 text-lg font-semibold text-neutral-800">
-            {category}
-          </h2>
+          <h2
+  className="mb-3 flex items-center gap-2 rounded-2xl px-3 py-2 text-lg font-bold"
+  style={{
+    backgroundColor: categoryData.bg,
+    color: categoryData.text,
+    borderLeft: `6px solid ${categoryData.border}`,
+  }}
+>
+  <span className="text-xl">
+    {categoryData.emoji}
+  </span>
+
+  <span>{category}</span>
+</h2>
 
           <div className="space-y-3">
             {items.map((item) => (
@@ -1786,9 +1850,9 @@ style={{
                       className="flex-1 rounded-lg border border-neutral-300 px-3 py-2 text-base text-gray-800 outline-none focus:border-neutral-500 focus:ring-2 focus:ring-neutral-200"
                     >
                       {categories.map((cat) => (
-                        <option key={cat} value={cat}>
-                          {cat}
-                        </option>
+                        <option key={cat.name} value={cat.name}>
+                        {cat.emoji} {cat.name}
+                      </option>
                       ))}
                     </select>
 
@@ -1891,28 +1955,57 @@ style={{
                             {item.note}
                           </p>
                         )}
+
+{mode === "all" && (
+
+<span
+  className="mt-1 inline-flex w-fit rounded-full px-2 py-1 text-[11px] font-bold"
+  style={{
+    backgroundColor: item.group_id
+      ? "#e0f2fe"
+      : "#ecfccb",
+
+    color: item.group_id
+      ? "#0284c7"
+      : "#4d7c0f",
+  }}
+>
+{item.group_id
+  ? `共有：${
+      groups.find(
+        (group: any) =>
+          group.id === item.group_id
+      )?.name ?? "共有"
+    }`
+  : "個人リスト"}
+</span>
+)}
                       </div>
                     </div>
                 
-                    <div className="flex gap-2 text-xs">
-                      <button
-                        onClick={() => startEdit(item)}
-                        className="text-blue-500"
-                      >
-                        編集
-                      </button>
-                
-                      <button
-                        onClick={() => {
-                          if (confirm("削除していい？")) {
-                            deleteItem(item.id);
-                          }
-                        }}
-                        className="text-red-500"
-                      >
-                        削除
-                      </button>
-                    </div>
+                    <div className="flex gap-2">
+  <button
+    type="button"
+    onClick={() => startEdit(item)}
+    className="flex h-9 w-9 items-center justify-center rounded-xl bg-white text-sm shadow-sm ring-1 ring-neutral-200"
+    title="編集"
+  >
+    ✏️
+  </button>
+
+  <button
+    type="button"
+    onClick={() => {
+      if (confirm("削除していい？")) {
+        deleteItem(item.id);
+      }
+    }}
+    className="flex h-9 w-9 items-center justify-center rounded-xl bg-red-50 text-sm shadow-sm ring-1 ring-red-100"
+    title="削除"
+  >
+    🗑️
+  </button>
+</div>
                   </>
                 )}
               </div>
@@ -1948,53 +2041,6 @@ style={{
           </div>
         </div>
       )}
-      {isMenuOpen && (
-  <div
-    className="fixed inset-0 z-50 bg-black/30"
-    onClick={() => setIsMenuOpen(false)}
-  >
-    <div
-      className="ml-auto h-full w-72 bg-white p-5 shadow-xl"
-      onClick={(e) => e.stopPropagation()}
-    >
-      <div className="mb-5 flex items-center justify-between">
-        <p className="text-lg font-bold text-gray-800">メニュー</p>
-
-        <button
-          type="button"
-          onClick={() => setIsMenuOpen(false)}
-          className="rounded-full bg-gray-100 px-3 py-1 text-gray-500"
-        >
-          ×
-        </button>
-      </div>
-
-      <div className="flex flex-col gap-2">
-        {[
-          ["TOP", "/"],
-          ["My page 👤", "/profile"],
-          ["My items 💖", "/master"],
-          ["履歴 🕒", "/history"],
-          ["ガイド ❓", "/guide"],
-          ["プライバシー 🔐", "/privacy"],
-          ["免責事項 ⚠️", "/disclaimer"],
-        ].map(([label, path]) => (
-          <button
-            key={path}
-            type="button"
-            onClick={() => {
-              setIsMenuOpen(false);
-              router.push(path);
-            }}
-            className="rounded-xl bg-gray-50 px-4 py-3 text-left text-sm font-medium text-gray-700 hover:bg-gray-100"
-          >
-            {label}
-          </button>
-        ))}
-      </div>
-    </div>
-  </div>
-)}
     </main>
   );
 }

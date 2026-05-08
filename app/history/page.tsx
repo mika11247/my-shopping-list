@@ -1,5 +1,6 @@
 "use client";
 
+import Header from "@/components/Header";
 import { useEffect, useMemo, useState } from "react";
 import { supabase } from "../../lib/supabase";
 import { useRouter } from "next/navigation";
@@ -25,8 +26,6 @@ export default function HistoryPage() {
   const [toast, setToast] = useState("");
 
   const [theme, setTheme] = useState("default");
-
-  const [isMenuOpen, setIsMenuOpen] = useState(false);
 
   useEffect(() => {
     const savedTheme = localStorage.getItem("theme");
@@ -179,35 +178,17 @@ const currentPlan = profile?.plan ?? "free";
         </div>
       )}
 
-      <div className="mb-4 flex items-start justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-bold"
-style={{
-  color:
-    theme === "default" ? "#0284c7" : "var(--main-text)",
-}}>購入履歴</h1>
-          <p className="mt-1 text-sm text-gray-500">
-            チェック済みを削除したアイテムの履歴です。
-          </p>
-        </div>
+<div className="mx-auto max-w-xl">
+  <Header
+    title="履歴 🕒"
+    subtitle="History"
+  />
 
-        <div className="flex items-center gap-2">
-  <button
-    type="button"
-    onClick={() => setIsMenuOpen(true)}
-    className="rounded-xl bg-white px-3 py-2 text-xs text-gray-600 shadow ring-1 ring-gray-200"
-  >
-    ☰
-  </button>
-
-  <button
-    onClick={() => window.location.href = "/"}
-    className="rounded-full bg-white px-3 py-1 text-xs text-gray-600 shadow ring-1 ring-sky-100"
-  >
-    戻る
-  </button>
-</div>
-      </div>
+  <div className="mb-5">
+    <p className="text-sm leading-relaxed text-neutral-500">
+      チェック済みを削除したアイテムの履歴です。
+    </p>
+  </div>
 
       {loading ? (
   <p className="text-sm text-gray-500">読み込み中...</p>
@@ -301,57 +282,7 @@ style={{
     ))}
   </div>
 )}
-
-{isMenuOpen && (
-  <div
-    className="fixed inset-0 z-50 bg-black/30"
-    onClick={() => setIsMenuOpen(false)}
-  >
-    <div
-      className="ml-auto h-full w-72 bg-white p-5 shadow-xl"
-      onClick={(e) => e.stopPropagation()}
-    >
-      <div className="mb-5 flex items-center justify-between">
-        <p className="text-lg font-bold text-gray-800">
-          メニュー
-        </p>
-
-        <button
-          type="button"
-          onClick={() => setIsMenuOpen(false)}
-          className="rounded-full bg-gray-100 px-3 py-1 text-gray-500"
-        >
-          ×
-        </button>
-      </div>
-
-      <div className="flex flex-col gap-2">
-        {[
-          ["TOP", "/"],
-          ["My page 👤", "/profile"],
-          ["My items 💖", "/master"],
-          ["履歴 🕒", "/history"],
-          ["ガイド ❓", "/guide"],
-          ["プライバシー 🔐", "/privacy"],
-          ["免責事項 ⚠️", "/disclaimer"],
-        ].map(([label, path]) => (
-          <button
-            key={path}
-            type="button"
-            onClick={() => {
-              setIsMenuOpen(false);
-              window.location.href = path;
-            }}
-            className="rounded-xl bg-gray-50 px-4 py-3 text-left text-sm font-medium text-gray-700 hover:bg-gray-100"
-          >
-            {label}
-          </button>
-        ))}
-      </div>
-    </div>
-  </div>
-)}
-
+</div>
     </main>
   );
 }

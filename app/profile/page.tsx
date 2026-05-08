@@ -1,5 +1,6 @@
 "use client";
 
+import Header from "@/components/Header";
 import { useEffect, useState } from "react";
 import { supabase } from "../../lib/supabase";
 import { useRouter } from "next/navigation";
@@ -24,8 +25,6 @@ export default function ProfilePage() {
   const [theme, setTheme] = useState("default");
   const [fontSize, setFontSize] = useState("normal");
   const [density, setDensity] = useState("normal");
-
-  const [isMenuOpen, setIsMenuOpen] = useState(false);
 
   const changeTheme = (newTheme: string) => {
     setTheme(newTheme);
@@ -328,53 +327,19 @@ router.push("/login?withdraw=1");
         : "var(--bg-gradient)",
   }}
 >
-      <div className="mx-auto max-w-xl">
-        <div className="mb-5 flex items-start justify-between gap-4">
-          <div>
-            <h1 className="text-2xl font-bold"
-style={{
-  color:
-    theme === "default" ? "#4d7c0f" : "var(--main-text)",
-}}>My Page</h1>
-            <p className="mt-1 text-sm text-gray-500">
-              アカウント情報と利用状況を確認できます。
-            </p>
-          </div>
+<div className="mx-auto max-w-xl">
+  <Header
+    title="マイページ 👤"
+    subtitle="My page"
+  />
 
-          <div className="flex items-center gap-2">
-  <button
-    type="button"
-    onClick={() => setIsMenuOpen(true)}
-    className="rounded-xl bg-white px-3 py-2 text-xs text-gray-600 shadow ring-1 ring-gray-200"
-  >
-    ☰
-  </button>
+  <div className="mb-5">
+    <p className="text-sm leading-relaxed text-neutral-500">
+      アカウント情報や利用状況、表示設定を確認できます。
+    </p>
+  </div>
 
-  <button
-    onClick={() => window.location.href = "/"}
-    className="rounded-full px-3 py-1 text-xs shadow"
-    style={{
-      backgroundColor:
-        theme === "default"
-          ? "#ffffff"
-          : "var(--sub-bg)",
-      color:
-        theme === "default"
-          ? "#525252"
-          : "var(--main-text)",
-      border: `1px solid ${
-        theme === "default"
-          ? "#d9f99d"
-          : "var(--ring-color)"
-      }`,
-    }}
-  >
-    戻る
-  </button>
-</div>
-        </div>
-
-        {message && (
+  {message && (
           <div
           className="mb-4 rounded-2xl px-4 py-3 text-sm font-bold"
           style={{
@@ -793,75 +758,28 @@ style={{
             </section>
 
             <button
-              onClick={handleLogout}
-              className="w-full rounded-full px-4 py-3 text-sm font-bold text-white shadow"
-style={{
-  backgroundColor:
-    theme === "default" ? "#65a30d" : "var(--main-color)",
-}}
-            >
-              ログアウト
-            </button>
+  onClick={handleLogout}
+  className="w-full rounded-full px-4 py-3 text-sm font-bold text-white shadow"
+  style={{
+    backgroundColor:
+      theme === "default"
+        ? "#65a30d"
+        : "var(--main-color)",
+  }}
+>
+  ログアウト
+</button>
 
-            <button
-              onClick={handleWithdraw}
-              className="w-full rounded-full bg-white px-4 py-3 text-sm font-bold text-red-500 shadow ring-1 ring-red-100"
-            >
-              退会する
-            </button>
-          </div>
-        )}
+<button
+  onClick={handleWithdraw}
+  className="w-full rounded-full bg-white px-4 py-3 text-sm font-bold text-red-500 shadow ring-1 ring-red-100"
+>
+  退会する
+</button>
+
+        </div>
+      )}
       </div>
-
-      {isMenuOpen && (
-  <div
-    className="fixed inset-0 z-50 bg-black/30"
-    onClick={() => setIsMenuOpen(false)}
-  >
-    <div
-      className="ml-auto h-full w-72 bg-white p-5 shadow-xl"
-      onClick={(e) => e.stopPropagation()}
-    >
-      <div className="mb-5 flex items-center justify-between">
-        <p className="text-lg font-bold text-gray-800">
-          メニュー
-        </p>
-
-        <button
-          type="button"
-          onClick={() => setIsMenuOpen(false)}
-          className="rounded-full bg-gray-100 px-3 py-1 text-gray-500"
-        >
-          ×
-        </button>
-      </div>
-
-      <div className="flex flex-col gap-2">
-        {[
-          ["TOP", "/"],
-          ["My page 👤", "/profile"],
-          ["My items 💖", "/master"],
-          ["履歴 🕒", "/history"],
-          ["ガイド ❓", "/guide"],
-          ["プライバシー 🔐", "/privacy"],
-          ["免責事項 ⚠️", "/disclaimer"],
-        ].map(([label, path]) => (
-          <button
-            key={path}
-            type="button"
-            onClick={() => {
-              setIsMenuOpen(false);
-              window.location.href = path;
-            }}
-            className="rounded-xl bg-gray-50 px-4 py-3 text-left text-sm font-medium text-gray-700 hover:bg-gray-100"
-          >
-            {label}
-          </button>
-        ))}
-      </div>
-    </div>
-  </div>
-)}
     </main>
   );
 }
