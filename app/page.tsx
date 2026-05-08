@@ -1262,7 +1262,7 @@ await supabase
     onClick={() => router.push("/profile")}
     className="rounded-full bg-lime-100 px-3 py-1 text-xs text-lime-700 shadow ring-1 ring-lime-200 hover:bg-lime-200"
   >
-    My page 👤
+    マイページ 👤
   </button>
 
   {/* My items：ピンク */}
@@ -1270,7 +1270,7 @@ await supabase
     onClick={() => router.push("/master")}
     className="rounded-full bg-pink-100 px-3 py-1 text-xs text-pink-600 shadow ring-1 ring-pink-200 hover:bg-pink-200"
   >
-    My items 💖
+    マイアイテム 💖
   </button>
 
   {/* 履歴：水色 */}

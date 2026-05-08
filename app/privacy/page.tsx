@@ -9,7 +9,7 @@ export default function PrivacyPage() {
       <div className="mx-auto max-w-xl space-y-4">
       
       <Header
-  title="プライバシー 🔐"
+  title="プライバシーポリシー 🔐"
   subtitle="Privacy Policy"
 />
 
