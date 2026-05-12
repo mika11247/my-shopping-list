@@ -1289,6 +1289,14 @@ await supabase
   ガイド ❓
 </button>
 
+{/* お問い合わせ：ブルー */}
+<button
+  onClick={() => router.push("/contact")}
+  className="rounded-full bg-sky-100 px-3 py-1 text-xs text-sky-600 shadow ring-1 ring-sky-200 hover:bg-sky-200"
+>
+  お問い合わせ 📩
+</button>
+
 <button
   onClick={() => router.push("/privacy")}
   className="rounded-full bg-purple-100 px-3 py-1 text-xs text-purple-600 shadow ring-1 ring-purple-200 hover:bg-purple-200"

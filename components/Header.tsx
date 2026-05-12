@@ -93,27 +93,29 @@ export default function Header({
             </div>
 
             <div className="flex flex-col gap-2">
-              {[
-                ["TOP", "/"],
-                ["マイページ 👤", "/profile"],
-                ["マイアイテム 💖", "/master"],
-                ["履歴 🕒", "/history"],
-                ["ガイド ❓", "/guide"],
-                ["プライバシー 🔐", "/privacy"],
-                ["免責事項 ⚠️", "/disclaimer"],
-              ].map(([label, path]) => (
-                <button
-                  key={path}
-                  type="button"
-                  onClick={() => {
-                    setIsMenuOpen(false);
-                    router.push(path);
-                  }}
-                  className="rounded-xl bg-gray-50 px-4 py-3 text-left text-sm font-medium text-gray-700 hover:bg-gray-100"
-                >
-                  {label}
-                </button>
-              ))}
+             
+                {[
+  ["TOP", "/"],
+  ["マイページ 👤", "/profile"],
+  ["マイアイテム 💖", "/master"],
+  ["履歴 🕒", "/history"],
+  ["ガイド ❓", "/guide"],
+  ["お問い合わせ 📩", "/contact"],
+  ["プライバシー 🔐", "/privacy"],
+  ["免責事項 ⚠️", "/disclaimer"],
+].map(([label, path]) => (
+  <button
+    key={path}
+    type="button"
+    onClick={() => {
+      setIsMenuOpen(false);
+      router.push(path);
+    }}
+    className="rounded-xl bg-gray-50 px-4 py-3 text-left text-sm font-medium text-gray-700 hover:bg-gray-100"
+  >
+    {label}
+  </button>
+))}
 
 <button
   type="button"
