@@ -17,7 +17,7 @@ export default function ContactPage() {
           </p>
 
           <a
-            href="https://m-glitter.com/contact/"
+            href="https://mglitter.net/contact/"
             target="_blank"
             rel="noopener noreferrer"
             className="mt-4 block rounded-2xl bg-sky-500 px-4 py-3 text-center text-sm font-semibold text-white shadow-sm"
