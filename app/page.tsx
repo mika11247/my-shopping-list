@@ -1255,91 +1255,18 @@ await supabase
   userName={displayName}
 />
 
-  <div className="mb-4 flex flex-wrap gap-2">
-
-  {/* マイページ：黄緑 */}
-  <button
-    onClick={() => router.push("/profile")}
-    className="rounded-full bg-lime-100 px-3 py-1 text-xs text-lime-700 shadow ring-1 ring-lime-200 hover:bg-lime-200"
-  >
-    マイページ 👤
-  </button>
-
-  {/* My items：ピンク */}
-  <button
-    onClick={() => router.push("/master")}
-    className="rounded-full bg-pink-100 px-3 py-1 text-xs text-pink-600 shadow ring-1 ring-pink-200 hover:bg-pink-200"
-  >
-    マイアイテム 💖
-  </button>
-
-  {/* 履歴：水色 */}
-  <button
-    onClick={() => router.push("/history")}
-    className="rounded-full bg-sky-100 px-3 py-1 text-xs text-sky-600 shadow ring-1 ring-sky-200 hover:bg-sky-200"
-  >
-    履歴 🕒
-  </button>
-
-  {/* ガイド：オレンジ */}
-<button
-  onClick={() => router.push("/guide")}
-  className="rounded-full bg-orange-100 px-3 py-1 text-xs text-orange-600 shadow ring-1 ring-orange-200 hover:bg-orange-200"
->
-  ガイド ❓
-</button>
-
-{/* お問い合わせ：ブルー */}
-<button
-  onClick={() => router.push("/contact")}
-  className="rounded-full bg-sky-100 px-3 py-1 text-xs text-sky-600 shadow ring-1 ring-sky-200 hover:bg-sky-200"
->
-  お問い合わせ 📩
-</button>
-
-<button
-  onClick={() => router.push("/privacy")}
-  className="rounded-full bg-purple-100 px-3 py-1 text-xs text-purple-600 shadow ring-1 ring-purple-200 hover:bg-purple-200"
->
-  プライバシー 🔐
-</button>
-
-<button
-  onClick={() => router.push("/disclaimer")}
-  className="rounded-full bg-gray-100 px-3 py-1 text-xs text-gray-600 shadow ring-1 ring-gray-200 hover:bg-gray-200"
->
-  免責事項 ⚠️
-</button>
-
-</div>
-
-<div className="mb-5 mt-4">
-  <p className="text-base font-semibold text-neutral-700">
-    いつもの買い物を、もっとシンプルに。
-  </p>
-
-  <p className="mt-1 text-sm text-neutral-500">
-    よく使うアイテムをすばやく追加できます。
-    <span className="ml-1 text-xs text-neutral-400">
-      β版
-    </span>
-  </p>
-</div>
-
-<section className="mb-4 space-y-4">
-
-{/* 表示モード */}
-<div
-  className="rounded-3xl bg-white p-4 shadow-sm"
-  style={{
-    border: `1px solid ${
-      theme === "default" ? "#e5e7eb" : "var(--ring-color)"
-    }`,
-  }}
->
-  <p className="mb-3 text-sm font-bold text-neutral-700">
+  <section className="mb-4 rounded-3xl border border-white/70 bg-white/80 p-5 shadow-sm backdrop-blur">
+  <div className="mb-4">
+  <p className="text-sm font-bold text-neutral-700">
     表示モード
   </p>
+
+  <p className="mt-1 text-xs text-neutral-500">
+    個人用・共有リストを切り替えできます
+  </p>
+</div>
+
+  <div>
 
   <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
     <button
@@ -1600,201 +1527,208 @@ await supabase
 )}
 </section>
 
-<div className="mb-3 flex items-center justify-between">
-  <label className="block text-sm font-bold text-neutral-700">
-    アイテムを検索
-  </label>
+<section className="rounded-3xl border border-white/70 bg-white/80 p-5 shadow-sm backdrop-blur">
+  <div className="mb-4 flex items-center justify-between">
+    <div>
+      <p className="text-sm font-black text-neutral-800">
+        🛒 アイテムを追加
+      </p>
 
-  <button
-    onClick={deleteCheckedItems}
-    className="rounded-full bg-red-50 px-4 py-2 text-xs font-bold text-red-500 shadow-sm ring-1 ring-red-100"
-  >
-    🗑 チェック済みを削除
-  </button>
-</div>
+      <p className="mt-1 text-xs text-neutral-500">
+        よく使うアイテムをすばやく追加できます
+      </p>
+    </div>
 
-{mode !== "all" ? (
-  <section
-  className="rounded-2xl bg-white p-4 shadow-sm"
-  style={{
-    border: `1px solid ${
-      theme === "default"
-        ? "#e5e7eb"
-        : "var(--ring-color)"
-    }`,
-  }}
->
-          
+    <button
+      type="button"
+      onClick={deleteCheckedItems}
+      className="rounded-full bg-red-50 px-3 py-2 text-xs font-bold text-red-500"
+    >
+      🗑 チェック済み削除
+    </button>
+  </div>
 
-          <div className="flex gap-2">
-  <input
-  type="text"
-  placeholder="たまご、牛乳…"
-  value={search}
-  onChange={(e) => setSearch(e.target.value)}
-  onKeyDown={(e) => {
-    if (e.key === "Enter" && search.trim() !== "") {
-      addItem({
-        name: search,
-        category: selectedCategory,
-        note: "",
-        saveToMaster: true,
-        isManual: true,
-      });
-    }
-  }}
-  className="flex-1 rounded-xl border px-4 py-3 text-base text-gray-800 outline-none"
-style={{
-  borderColor:
-    theme === "default" ? "#d1d5db" : "var(--ring-color)",
-}}
-onFocus={(e) => {
-  e.target.style.borderColor =
-    theme === "default" ? "#6b7280" : "var(--main-color)";
-}}
-onBlur={(e) => {
-  e.target.style.borderColor =
-    theme === "default" ? "#d1d5db" : "var(--ring-color)";
-}}
-/>
-
-  <button
-    type="button"
-    onClick={() => {
-      if (!search.trim()) return;
-    
-      const matchedCandidate = candidateItems.find(
-        (item) =>
-          item.name.trim().toLowerCase() ===
-          search.trim().toLowerCase()
-      );
-    
-      addItem({
-        name: search,
-        category:
-          matchedCandidate?.category ?? selectedCategory,
-        note: matchedCandidate?.note ?? "",
-        image_url:
-          matchedCandidate?.image_url ?? "🛒",
-        saveToMaster: false,
-        isManual: false,
-      });
-    }}
-    className="rounded-xl px-4 py-3 text-sm text-white"
-style={{
-  backgroundColor:
-    theme === "default" ? "#3b82f6" : "var(--main-color)",
-}}
-  >
-    追加
-  </button>
-
-</div>
-
-<select
-  value={selectedCategory}
-  onChange={(e) => setSelectedCategory(e.target.value)}
-  className="mt-2 w-full rounded-xl border border-neutral-300 px-4 py-2 text-base text-gray-800 outline-none focus:border-neutral-500 focus:ring-2 focus:ring-neutral-200"
->
-  {categories.map((cat) => (
-    <option key={cat.name} value={cat.name}>
-    {cat.emoji} {cat.name}
-  </option>
-  ))}
-</select>
-
-{shoppingItems.filter(item => item.category === "一時メモ").length >= memoLimit - 5 &&
- currentPlan !== "pro" && (
-  <p className="mt-1 text-xs text-gray-400">
-    あと{
-      memoLimit -
-      shoppingItems.filter(item => item.category === "一時メモ").length
-    }件で一時メモ上限です
-  </p>
-)}
-
-{search.trim() !== "" && (
-  <div className="mt-3">
-    {filteredItems.length > 0 ? (
-      <div className="flex flex-wrap gap-2">
-        {filteredItems.map((item) => (
-          <button
-            key={item.name}
-            type="button"
-            onClick={() =>
-  addItem({
-    name: item.name,
-    category: item.category ?? "その他",
-    note: item.note ?? "",
-    image_url: item.image_url ?? "🛒",
-    saveToMaster: false,
-    isManual: true,
-  })
-}
-            className="rounded-full bg-neutral-100 px-3 py-1 text-sm text-neutral-700 transition hover:bg-neutral-200"
-          >
-            {item.name}
-          </button>
-        ))}
-      </div>
-    ) : (
-      <div className="rounded-xl bg-neutral-50 p-3 ring-1 ring-neutral-200">
-        <p className="text-sm text-neutral-500">
-          該当するアイテムがありません
-        </p>
-
-        <button
-  type="button"
-  onClick={() =>
-    addItem({
-      name: search,
-      category: selectedCategory,
-      note: "",
-      saveToMaster: true,
-      isManual: true,
-    })
-  }
-  className="mt-2 mr-2 rounded-lg bg-blue-500 px-3 py-2 text-base text-white"
->
-  「{search}」をMy itemsに追加
-</button>
+  {mode !== "all" ? (
+    <div className="space-y-3">
+      <div className="flex gap-2">
+        <input
+          type="text"
+          placeholder="たまご、牛乳…"
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === "Enter" && search.trim() !== "") {
+              addItem({
+                name: search,
+                category: selectedCategory,
+                note: "",
+                saveToMaster: true,
+                isManual: true,
+              });
+            }
+          }}
+          className="flex-1 rounded-2xl border bg-neutral-50 px-4 py-3 text-base text-gray-800 shadow-inner outline-none transition"
+          style={{
+            borderColor:
+              theme === "default"
+                ? "#e5e7eb"
+                : "var(--ring-color)",
+          }}
+          onFocus={(e) => {
+            e.target.style.borderColor =
+              theme === "default"
+                ? "#84cc16"
+                : "var(--main-color)";
+          }}
+          onBlur={(e) => {
+            e.target.style.borderColor =
+              theme === "default"
+                ? "#e5e7eb"
+                : "var(--ring-color)";
+          }}
+        />
 
         <button
           type="button"
-          onClick={() =>
+          onClick={() => {
+            if (!search.trim()) return;
+
+            const matchedCandidate = candidateItems.find(
+              (item) =>
+                item.name.trim().toLowerCase() ===
+                search.trim().toLowerCase()
+            );
+
             addItem({
               name: search,
-              category: "一時メモ",
-              note: "",
+              category:
+                matchedCandidate?.category ?? selectedCategory,
+              note: matchedCandidate?.note ?? "",
+              image_url:
+                matchedCandidate?.image_url ?? "🛒",
               saveToMaster: false,
               isManual: false,
-            })
-          }
-          className="mt-2 rounded-lg bg-neutral-500 px-3 py-2 text-base text-white"
+            });
+          }}
+          className="rounded-2xl px-5 py-3 text-sm font-black tracking-wide text-white shadow-sm transition hover:scale-[1.02]"
+          style={{
+            backgroundColor:
+              theme === "default"
+                ? "#3b82f6"
+                : "var(--main-color)",
+          }}
         >
-          「{search}」を一時追加する
+          追加
         </button>
       </div>
-    )}
-  </div>
-)}
-        </section>
-) : (
-  <div
-    className="rounded-2xl bg-white p-4 text-sm text-gray-500 shadow-sm"
-    style={{
-      border: `1px solid ${
-        theme === "default"
-          ? "#e5e7eb"
-          : "var(--ring-color)"
-      }`,
-    }}
-  >
-    追加する場合は
-    「個人リスト」または
-    「共有リスト」を選択してください
-  </div>
-)}
+
+      <select
+        value={selectedCategory}
+        onChange={(e) => setSelectedCategory(e.target.value)}
+        className="w-full rounded-2xl border border-neutral-200 bg-white px-4 py-3 text-base text-gray-800 outline-none transition focus:border-neutral-400"
+      >
+        {categories.map((cat) => (
+          <option key={cat.name} value={cat.name}>
+            {cat.emoji} {cat.name}
+          </option>
+        ))}
+      </select>
+
+      {shoppingItems.filter(
+        (item) => item.category === "一時メモ"
+      ).length >=
+        memoLimit - 5 &&
+        currentPlan !== "pro" && (
+          <p className="text-xs text-gray-400">
+            あと
+            {memoLimit -
+              shoppingItems.filter(
+                (item) => item.category === "一時メモ"
+              ).length}
+            件で一時メモ上限です
+          </p>
+        )}
+
+      {search.trim() !== "" && (
+        <div>
+          {filteredItems.length > 0 ? (
+            <div className="flex flex-wrap gap-2">
+              {filteredItems.map((item) => (
+                <button
+                  key={item.name}
+                  type="button"
+                  onClick={() =>
+                    addItem({
+                      name: item.name,
+                      category:
+                        item.category ?? "その他",
+                      note: item.note ?? "",
+                      image_url:
+                        item.image_url ?? "🛒",
+                      saveToMaster: false,
+                      isManual: true,
+                    })
+                  }
+                  className="rounded-full bg-white px-3 py-2 text-sm text-neutral-700 shadow-sm ring-1 ring-neutral-100 transition hover:bg-neutral-50"
+                >
+                  {item.name}
+                </button>
+              ))}
+            </div>
+          ) : (
+            <div className="rounded-2xl bg-neutral-50 p-4 ring-1 ring-neutral-200">
+              <p className="text-sm text-neutral-500">
+                該当するアイテムがありません
+              </p>
+
+              <div className="mt-3 flex flex-wrap gap-2">
+                <button
+                  type="button"
+                  onClick={() =>
+                    addItem({
+                      name: search,
+                      category: selectedCategory,
+                      note: "",
+                      saveToMaster: true,
+                      isManual: true,
+                    })
+                  }
+                  className="rounded-2xl bg-blue-500 px-4 py-3 text-sm font-bold text-white shadow-sm"
+                >
+                  「{search}」をMy itemsに追加
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() =>
+                    addItem({
+                      name: search,
+                      category: "一時メモ",
+                      note: "",
+                      saveToMaster: false,
+                      isManual: false,
+                    })
+                  }
+                  className="rounded-2xl bg-neutral-500 px-4 py-3 text-sm font-bold text-white shadow-sm"
+                >
+                  一時追加
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  ) : (
+    <div
+      className="rounded-2xl bg-neutral-50 p-4 text-sm text-gray-500 ring-1 ring-neutral-200"
+    >
+      追加する場合は
+      「個人リスト」または
+      「共有リスト」を選択してください
+    </div>
+  )}
+</section>
 
         <section className="mt-6 space-y-4">
   {shoppingItems.length === 0 ? (

@@ -492,13 +492,29 @@ style={{
 }}>
                   <p className="text-xs text-gray-500">会員状況</p>
 
-                  <p className={`mt-1 text-sm font-bold ${getPlanColor(userPlan)}`}>
+<p className={`mt-1 text-sm font-bold ${getPlanColor(userPlan)}`}>
   {getPlanLabel(userPlan)}
 </p>
-                  
+
+<button
+  onClick={() => router.push("/upgrade")}
+  className="mt-3 w-full rounded-full px-4 py-3 text-sm font-bold text-white shadow"
+  style={{
+    backgroundColor:
+      theme === "default"
+        ? "#7c3aed"
+        : "var(--main-color)",
+  }}
+>
+  🌙 プラン詳細を見る
+</button>
+
+                 
                 </div>
               </div>
             </section>
+
+
 
             <section
   className="rounded-2xl bg-white p-4 shadow"
@@ -540,166 +556,6 @@ style={{
     </div>
   </div>
 </section>
-
-{(userPlan === "pro" || userPlan === "special") && (
-  <section
-    className="rounded-2xl bg-white p-4 shadow"
-    style={{
-      border: `1px solid ${
-        theme === "default" ? "#d9f99d" : "var(--ring-color)"
-      }`,
-    }}
-  >
-    <p
-      className="mb-4 text-sm font-bold"
-      style={{
-        color: theme === "default" ? "#4d7c0f" : "var(--main-text)",
-      }}
-    >
-      設定
-    </p>
-
-    <div className="space-y-4">
-      <div>
-        <p className="mb-2 text-xs text-gray-500">カラーテーマ</p>
-
-        <div className="flex flex-wrap gap-2">
-          {[
-            ["default", "デフォルト"],
-            ["lime", "ライム"],
-            ["pink", "ピンク"],
-            ["sky", "スカイ"],
-            ["orange", "オレンジ"],
-            ["purple", "パープル"],
-          ].map(([value, label]) => (
-            <button
-              key={value}
-              onClick={() => changeTheme(value)}
-              className="rounded-full px-3 py-1 text-xs font-bold"
-              style={{
-                backgroundColor:
-                  theme === value
-                    ? theme === "default"
-                      ? "#e5e7eb"
-                      : "var(--main-bg)"
-                    : "#f3f4f6",
-                color:
-                  theme === value
-                    ? theme === "default"
-                      ? "#374151"
-                      : "var(--main-text)"
-                    : "#6b7280",
-                border: `2px solid ${
-                  theme === value
-                    ? theme === "default"
-                      ? "#9ca3af"
-                      : "var(--main-color)"
-                    : "transparent"
-                }`,
-              }}
-            >
-              {theme === value ? `${label} ✓` : label}
-            </button>
-          ))}
-        </div>
-      </div>
-
-      <div>
-  <p className="mb-2 text-xs text-gray-500">
-    文字サイズ
-  </p>
-
-  <div className="flex flex-wrap gap-2">
-    {[
-      ["small", "小"],
-      ["normal", "標準"],
-      ["large", "大"],
-    ].map(([value, label]) => (
-      <button
-        key={value}
-        onClick={() => changeFontSize(value)}
-        className="rounded-full px-3 py-1 text-xs font-bold"
-        style={{
-          backgroundColor:
-            fontSize === value
-              ? theme === "default"
-                ? "#e5e7eb"
-                : "var(--main-bg)"
-              : "#f3f4f6",
-
-          color:
-            fontSize === value
-              ? theme === "default"
-                ? "#374151"
-                : "var(--main-text)"
-              : "#6b7280",
-
-          border: `2px solid ${
-            fontSize === value
-              ? theme === "default"
-                ? "#9ca3af"
-                : "var(--main-color)"
-              : "transparent"
-          }`,
-        }}
-      >
-        {fontSize === value ? `${label} ✓` : label}
-      </button>
-    ))}
-  </div>
-</div>
-
-<div>
-  <p className="mb-2 text-xs text-gray-500">
-    表示密度
-  </p>
-
-  <div className="flex flex-wrap gap-2">
-    {[
-      ["compact", "コンパクト"],
-      ["normal", "標準"],
-    ].map(([value, label]) => (
-      <button
-        key={value}
-        onClick={() => changeDensity(value)}
-        className="rounded-full px-3 py-1 text-xs font-bold"
-        style={{
-          backgroundColor:
-            density === value
-              ? theme === "default"
-                ? "#e5e7eb"
-                : "var(--main-bg)"
-              : "#f3f4f6",
-
-          color:
-            density === value
-              ? theme === "default"
-                ? "#374151"
-                : "var(--main-text)"
-              : "#6b7280",
-
-          border: `2px solid ${
-            density === value
-              ? theme === "default"
-                ? "#9ca3af"
-                : "var(--main-color)"
-              : "transparent"
-          }`,
-        }}
-      >
-        {density === value ? `${label} ✓` : label}
-      </button>
-    ))}
-  </div>
-</div>
-
-<p className="mt-3 text-xs text-gray-400">
-  設定は自動で保存されます
-</p>
-
-    </div>
-  </section>
-)}
 
 <section
   className="rounded-2xl bg-white p-4 shadow"
