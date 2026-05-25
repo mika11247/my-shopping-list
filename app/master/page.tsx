@@ -56,10 +56,31 @@ const [selectedGroupId, setSelectedGroupId] = useState("personal");
 
 
 useEffect(() => {
-  const savedTheme = localStorage.getItem("theme");
-  if (savedTheme) {
-    setTheme(savedTheme);
-  }
+  const savedTheme =
+    localStorage.getItem("theme") ?? "default";
+
+  setTheme(savedTheme);
+
+  const handleThemeChange = (
+    event: Event
+  ) => {
+    const customEvent =
+      event as CustomEvent<string>;
+
+    setTheme(customEvent.detail);
+  };
+
+  window.addEventListener(
+    "theme-change",
+    handleThemeChange
+  );
+
+  return () => {
+    window.removeEventListener(
+      "theme-change",
+      handleThemeChange
+    );
+  };
 }, []);
 
 const masterLimit = getLimitByPlan(userRole, userPlan, "master");
@@ -421,6 +442,7 @@ const compressImage = async (file: File) => {
       <Header
   title="マイアイテム 💖"
   subtitle="My items"
+  defaultTheme="pink"
 />
 
 <div className="mb-4">

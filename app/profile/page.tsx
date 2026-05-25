@@ -303,12 +303,33 @@ router.push("/login?withdraw=1");
     fetchProfile();
   }, []);
 
-  useEffect(() => {
-    const savedTheme = localStorage.getItem("theme");
-    if (savedTheme) {
-      setTheme(savedTheme);
-    }
-  }, []);
+ useEffect(() => {
+  const savedTheme =
+    localStorage.getItem("theme") ?? "default";
+
+  setTheme(savedTheme);
+
+  const handleThemeChange = (
+    event: Event
+  ) => {
+    const customEvent =
+      event as CustomEvent<string>;
+
+    setTheme(customEvent.detail);
+  };
+
+  window.addEventListener(
+    "theme-change",
+    handleThemeChange
+  );
+
+  return () => {
+    window.removeEventListener(
+      "theme-change",
+      handleThemeChange
+    );
+  };
+}, []);
 
   useEffect(() => {
     const savedFontSize =
@@ -331,6 +352,7 @@ router.push("/login?withdraw=1");
   <Header
     title="マイページ 👤"
     subtitle="My page"
+    defaultTheme="lime"
   />
 
   <div className="mb-5">

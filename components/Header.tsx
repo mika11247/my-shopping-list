@@ -8,12 +8,14 @@ type HeaderProps = {
   title: string;
   subtitle?: string;
   userName?: string;
+  defaultTheme?: "lime" | "pink" | "sky" | "orange" | "purple";
 };
 
 export default function Header({
   title,
   subtitle,
   userName,
+  defaultTheme = "lime",
 }: HeaderProps) {
   const router = useRouter();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -64,10 +66,13 @@ const [userPlan, setUserPlan] =
 
   const changeTheme = (newTheme: string) => {
   setTheme(newTheme);
-
   localStorage.setItem("theme", newTheme);
 
-  document.documentElement.className = newTheme;
+  window.dispatchEvent(
+    new CustomEvent("theme-change", {
+      detail: newTheme,
+    })
+  );
 };
 
 const changeFontSize = (size: string) => {
@@ -160,8 +165,66 @@ const changeDensity = (value: string) => {
 
   return (
     <>
-      <header className="mb-6 overflow-hidden rounded-3xl border border-white/70 bg-white/80 shadow-sm backdrop-blur">
-        <div className="bg-gradient-to-br from-lime-50 via-white to-sky-50 p-4">
+      <header
+  className="mb-6 overflow-hidden rounded-3xl bg-white/80 shadow-sm backdrop-blur"
+  style={{
+    border: `1px solid ${
+      theme === "lime"
+        ? "#d9f99d"
+        : theme === "pink"
+        ? "#fbcfe8"
+        : theme === "sky"
+        ? "#bae6fd"
+        : theme === "orange"
+        ? "#fed7aa"
+        : theme === "purple"
+        ? "#ddd6fe"
+        : defaultTheme === "pink"
+        ? "#fbcfe8"
+        : defaultTheme === "sky"
+        ? "#bae6fd"
+        : defaultTheme === "orange"
+        ? "#fed7aa"
+        : defaultTheme === "purple"
+        ? "#ddd6fe"
+        : "#d9f99d"
+    }`,
+  }}
+>
+  <div
+    className="p-4"
+    style={{
+      background:
+        theme === "lime"
+          ? "linear-gradient(to bottom right, #ecfccb, #ffffff, #bae6fd)"
+
+          : theme === "pink"
+          ? "linear-gradient(to bottom right, #fce7f3, #ffffff, #e9d5ff)"
+
+          : theme === "sky"
+          ? "linear-gradient(to bottom right, #e0f2fe, #ffffff, #d1fae5)"
+
+          : theme === "orange"
+          ? "linear-gradient(to bottom right, #fff7ed, #ffffff, #fde68a)"
+
+          : theme === "purple"
+          ? "linear-gradient(to bottom right, #f3e8ff, #ffffff, #fbcfe8)"
+
+          : defaultTheme === "pink"
+          ? "linear-gradient(to bottom right, #fce7f3, #ffffff, #e9d5ff)"
+
+          : defaultTheme === "sky"
+          ? "linear-gradient(to bottom right, #e0f2fe, #ffffff, #d1fae5)"
+
+          : defaultTheme === "orange"
+          ? "linear-gradient(to bottom right, #fff7ed, #ffffff, #fde68a)"
+
+          : defaultTheme === "purple"
+          ? "linear-gradient(to bottom right, #f3e8ff, #ffffff, #fbcfe8)"
+
+          : "linear-gradient(to bottom right, #ecfccb, #ffffff, #bae6fd)",
+    }}
+  >
           <div className="flex items-center justify-between gap-3">
             <div className="min-w-0">
               {subtitle && (
@@ -185,7 +248,28 @@ const changeDensity = (value: string) => {
               <button
                 type="button"
                 onClick={() => setIsSettingsOpen(true)}
-                className="flex h-11 w-11 items-center justify-center rounded-2xl border border-white bg-white/90 text-lg text-neutral-700 shadow-sm transition hover:scale-105 hover:bg-sky-50"
+                className="flex h-11 w-11 items-center justify-center rounded-2xl border border-white bg-white/90 text-lg text-neutral-700 shadow-sm transition hover:scale-105"
+style={{
+  backgroundColor: "rgba(255,255,255,0.9)",
+}}
+onMouseEnter={(e) => {
+  e.currentTarget.style.backgroundColor =
+    theme === "lime"
+      ? "#f7fee7"
+      : theme === "pink"
+      ? "#fdf2f8"
+      : theme === "sky"
+      ? "#f0f9ff"
+      : theme === "orange"
+      ? "#fff7ed"
+      : theme === "purple"
+      ? "#faf5ff"
+      : "#f7fee7";
+}}
+onMouseLeave={(e) => {
+  e.currentTarget.style.backgroundColor =
+    "rgba(255,255,255,0.9)";
+}}
                 aria-label="設定"
               >
                 🌙
@@ -194,7 +278,28 @@ const changeDensity = (value: string) => {
               <button
                 type="button"
                 onClick={() => setIsMenuOpen(true)}
-                className="flex h-11 w-11 items-center justify-center rounded-2xl border border-white bg-white/90 text-lg text-neutral-700 shadow-sm transition hover:scale-105 hover:bg-lime-50"
+                className="flex h-11 w-11 items-center justify-center rounded-2xl border border-white bg-white/90 text-lg text-neutral-700 shadow-sm transition hover:scale-105"
+style={{
+  backgroundColor: "rgba(255,255,255,0.9)",
+}}
+onMouseEnter={(e) => {
+  e.currentTarget.style.backgroundColor =
+    theme === "lime"
+      ? "#f7fee7"
+      : theme === "pink"
+      ? "#fdf2f8"
+      : theme === "sky"
+      ? "#f0f9ff"
+      : theme === "orange"
+      ? "#fff7ed"
+      : theme === "purple"
+      ? "#faf5ff"
+      : "#f7fee7";
+}}
+onMouseLeave={(e) => {
+  e.currentTarget.style.backgroundColor =
+    "rgba(255,255,255,0.9)";
+}}
                 aria-label="メニューを開く"
               >
                 ☰
@@ -210,10 +315,96 @@ const changeDensity = (value: string) => {
           onClick={() => setIsMenuOpen(false)}
         >
           <div
-            className="ml-auto h-full w-80 max-w-[85vw] overflow-y-auto bg-white p-5 shadow-2xl"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="mb-5 overflow-hidden rounded-3xl border border-lime-100 bg-gradient-to-br from-lime-50 via-white to-sky-50 p-4">
+  className="ml-auto h-full w-80 max-w-[85vw] overflow-y-auto p-5 shadow-2xl"
+  style={{
+    background:
+      theme === "lime"
+        ? "linear-gradient(to bottom, #f7fee7, #ffffff)"
+
+        : theme === "pink"
+        ? "linear-gradient(to bottom, #fdf2f8, #ffffff)"
+
+        : theme === "sky"
+        ? "linear-gradient(to bottom, #f0f9ff, #ffffff)"
+
+        : theme === "orange"
+        ? "linear-gradient(to bottom, #fff7ed, #ffffff)"
+
+        : theme === "purple"
+        ? "linear-gradient(to bottom, #faf5ff, #ffffff)"
+
+        : defaultTheme === "pink"
+        ? "linear-gradient(to bottom, #fdf2f8, #ffffff)"
+
+        : defaultTheme === "sky"
+        ? "linear-gradient(to bottom, #f0f9ff, #ffffff)"
+
+        : defaultTheme === "orange"
+        ? "linear-gradient(to bottom, #fff7ed, #ffffff)"
+
+        : defaultTheme === "purple"
+        ? "linear-gradient(to bottom, #faf5ff, #ffffff)"
+
+        : "linear-gradient(to bottom, #f7fee7, #ffffff)",
+  }}
+  onClick={(e) => e.stopPropagation()}
+>
+            <div
+  className="mb-5 overflow-hidden rounded-3xl p-4"
+  style={{
+    border: `1px solid ${
+      theme === "lime"
+        ? "#d9f99d"
+        : theme === "pink"
+        ? "#fbcfe8"
+        : theme === "sky"
+        ? "#bae6fd"
+        : theme === "orange"
+        ? "#fed7aa"
+        : theme === "purple"
+        ? "#ddd6fe"
+        : defaultTheme === "pink"
+        ? "#fbcfe8"
+        : defaultTheme === "sky"
+        ? "#bae6fd"
+        : defaultTheme === "orange"
+        ? "#fed7aa"
+        : defaultTheme === "purple"
+        ? "#ddd6fe"
+        : "#d9f99d"
+    }`,
+
+    background:
+      theme === "lime"
+        ? "linear-gradient(to bottom right, #ecfccb, #ffffff, #bae6fd)"
+
+        : theme === "pink"
+        ? "linear-gradient(to bottom right, #fce7f3, #ffffff, #e9d5ff)"
+
+        : theme === "sky"
+        ? "linear-gradient(to bottom right, #e0f2fe, #ffffff, #d1fae5)"
+
+        : theme === "orange"
+        ? "linear-gradient(to bottom right, #fff7ed, #ffffff, #fde68a)"
+
+        : theme === "purple"
+        ? "linear-gradient(to bottom right, #f3e8ff, #ffffff, #fbcfe8)"
+
+        : defaultTheme === "pink"
+        ? "linear-gradient(to bottom right, #fce7f3, #ffffff, #e9d5ff)"
+
+        : defaultTheme === "sky"
+        ? "linear-gradient(to bottom right, #e0f2fe, #ffffff, #d1fae5)"
+
+        : defaultTheme === "orange"
+        ? "linear-gradient(to bottom right, #fff7ed, #ffffff, #fde68a)"
+
+        : defaultTheme === "purple"
+        ? "linear-gradient(to bottom right, #f3e8ff, #ffffff, #fbcfe8)"
+
+        : "linear-gradient(to bottom right, #ecfccb, #ffffff, #bae6fd)",
+  }}
+>
               <div className="flex items-start justify-between gap-3">
                 <div>
                   <p className="text-2xl">🛒</p>
@@ -247,7 +438,43 @@ const changeDensity = (value: string) => {
                     setIsMenuOpen(false);
                     router.push(path);
                   }}
-                  className="rounded-2xl bg-gray-50 px-4 py-3 text-left text-sm font-bold text-gray-700 transition hover:scale-[1.01] hover:bg-lime-50 hover:text-lime-700"
+                 className="rounded-2xl bg-white/70 px-4 py-3 text-left text-sm font-bold text-gray-700 shadow-sm transition hover:scale-[1.01]"
+style={{
+  border: "1px solid rgba(255,255,255,0.7)",
+}}
+onMouseEnter={(e) => {
+  e.currentTarget.style.backgroundColor =
+    theme === "lime"
+      ? "#f7fee7"
+      : theme === "pink"
+      ? "#fdf2f8"
+      : theme === "sky"
+      ? "#f0f9ff"
+      : theme === "orange"
+      ? "#fff7ed"
+      : theme === "purple"
+      ? "#faf5ff"
+      : "#f7fee7";
+
+  e.currentTarget.style.color =
+    theme === "lime"
+      ? "#4d7c0f"
+      : theme === "pink"
+      ? "#be185d"
+      : theme === "sky"
+      ? "#0369a1"
+      : theme === "orange"
+      ? "#c2410c"
+      : theme === "purple"
+      ? "#7e22ce"
+      : "#4d7c0f";
+}}
+onMouseLeave={(e) => {
+  e.currentTarget.style.backgroundColor =
+    "rgba(255,255,255,0.7)";
+
+  e.currentTarget.style.color = "#374151";
+}}
                 >
                   {label}
                 </button>
@@ -271,15 +498,33 @@ const changeDensity = (value: string) => {
     onClick={() => setIsSettingsOpen(false)}
   >
     <div
-      className="
-        fixed bottom-0 left-0 right-0
-        rounded-t-[32px]
-        bg-white
-        p-5
-        shadow-2xl
-      "
-      onClick={(e) => e.stopPropagation()}
-    >
+  className="
+    fixed bottom-0 left-0 right-0
+    rounded-t-[32px]
+    p-5
+    shadow-2xl
+  "
+  style={{
+    background:
+      theme === "lime"
+        ? "linear-gradient(to top, #f7fee7, #ffffff)"
+
+        : theme === "pink"
+        ? "linear-gradient(to top, #fdf2f8, #ffffff)"
+
+        : theme === "sky"
+        ? "linear-gradient(to top, #f0f9ff, #ffffff)"
+
+        : theme === "orange"
+        ? "linear-gradient(to top, #fff7ed, #ffffff)"
+
+        : theme === "purple"
+        ? "linear-gradient(to top, #faf5ff, #ffffff)"
+
+        : "linear-gradient(to top, #f7fee7, #ffffff)",
+  }}
+  onClick={(e) => e.stopPropagation()}
+>
       <div className="mb-5 flex justify-center">
         <div className="h-1.5 w-14 rounded-full bg-neutral-300" />
       </div>
@@ -295,7 +540,22 @@ const changeDensity = (value: string) => {
       </div>
 
       <div className="space-y-3">
-        <div className="rounded-2xl bg-neutral-50 p-4">
+        <div
+  className="rounded-2xl p-4 shadow-sm"
+  style={{
+  backgroundColor:
+    theme === "lime"
+      ? "#f7fee7"
+      : theme === "pink"
+      ? "#fdf2f8"
+      : theme === "sky"
+      ? "#f0f9ff"
+      : theme === "orange"
+      ? "#fff7ed"
+      : theme === "purple"
+      ? "#faf5ff"
+      : "#f7fee7",
+}}>
   <p className="text-sm font-bold text-neutral-800">
     🎨 テーマ
   </p>
@@ -337,7 +597,22 @@ const changeDensity = (value: string) => {
   </div>
 </div>
 
-<div className="rounded-2xl bg-neutral-50 p-4">
+<div
+  className="rounded-2xl p-4 shadow-sm"
+  style={{
+  backgroundColor:
+    theme === "lime"
+      ? "#f7fee7"
+      : theme === "pink"
+      ? "#fdf2f8"
+      : theme === "sky"
+      ? "#f0f9ff"
+      : theme === "orange"
+      ? "#fff7ed"
+      : theme === "purple"
+      ? "#faf5ff"
+      : "#f7fee7",
+}}>
   <p className="text-sm font-bold text-neutral-800">
     🔠 文字サイズ
   </p>
@@ -376,7 +651,22 @@ const changeDensity = (value: string) => {
   </div>
 </div>
 
-<div className="rounded-2xl bg-neutral-50 p-4">
+<div
+  className="rounded-2xl p-4 shadow-sm"
+  style={{
+  backgroundColor:
+    theme === "lime"
+      ? "#f7fee7"
+      : theme === "pink"
+      ? "#fdf2f8"
+      : theme === "sky"
+      ? "#f0f9ff"
+      : theme === "orange"
+      ? "#fff7ed"
+      : theme === "purple"
+      ? "#faf5ff"
+      : "#f7fee7",
+}}>
   <p className="text-sm font-bold text-neutral-800">
     📏 表示密度
   </p>

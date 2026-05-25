@@ -28,11 +28,32 @@ export default function HistoryPage() {
   const [theme, setTheme] = useState("default");
 
   useEffect(() => {
-    const savedTheme = localStorage.getItem("theme");
-    if (savedTheme) {
-      setTheme(savedTheme);
-    }
-  }, []);
+  const savedTheme =
+    localStorage.getItem("theme") ?? "default";
+
+  setTheme(savedTheme);
+
+  const handleThemeChange = (
+    event: Event
+  ) => {
+    const customEvent =
+      event as CustomEvent<string>;
+
+    setTheme(customEvent.detail);
+  };
+
+  window.addEventListener(
+    "theme-change",
+    handleThemeChange
+  );
+
+  return () => {
+    window.removeEventListener(
+      "theme-change",
+      handleThemeChange
+    );
+  };
+}, []);
 
   const showToast = (message: string) => {
     setToast(message);
@@ -182,6 +203,7 @@ const currentPlan = profile?.plan ?? "free";
   <Header
     title="履歴 🕒"
     subtitle="History"
+    defaultTheme="sky"
   />
 
   <div className="mb-5">
