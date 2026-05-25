@@ -1346,181 +1346,260 @@ await supabase
           </select>
 
           {/* 共有管理 */}
+          {/* 共有管理 */}
 {mode === "group" && (
-  <div className="space-y-4 rounded-2xl bg-neutral-50 p-4 ring-1 ring-neutral-200">
+  <div
+    className="rounded-2xl bg-white p-4 shadow-sm"
+    style={{
+      border:
+        theme === "default"
+          ? "1px solid #e5e7eb"
+          : "1px solid var(--ring-color)",
+    }}
+  >
+    <button
+      type="button"
+      onClick={() =>
+        setIsShareManageOpen(!isShareManageOpen)
+      }
+      className="flex w-full items-center justify-between text-left"
+    >
+      <span className="text-xl font-bold text-neutral-800">
+        共有リスト管理 ⚙️
+      </span>
 
-    <div>
-      <p className="text-sm font-bold text-neutral-700">
-        👥 共有管理
-      </p>
+      <span className="text-sm text-neutral-500">
+        {isShareManageOpen
+          ? "閉じる ▲"
+          : "開く ▼"}
+      </span>
+    </button>
 
-      <p className="mt-1 text-xs text-neutral-500">
-        家族やパートナーと共有できます
-      </p>
-    </div>
+    {isShareManageOpen && (
+      <div className="mt-4 space-y-4">
 
-    <div className="flex gap-2">
-      <input
-        type="text"
-        value={newGroupName}
-        onChange={(e) =>
-          setNewGroupName(e.target.value)
-        }
-        placeholder="新しい共有リスト名"
-        className="flex-1 rounded-2xl border border-neutral-200 bg-white px-4 py-3 text-sm outline-none"
-      />
+        {/* 新規作成 */}
+        <div className="rounded-2xl bg-neutral-50 p-4 ring-1 ring-neutral-200">
+          <h3 className="mb-3 text-sm font-semibold text-neutral-700">
+            新規作成
+          </h3>
 
-      <button
-        type="button"
-        onClick={createSharedGroup}
-        className="rounded-2xl bg-blue-500 px-4 py-3 text-sm font-bold text-white"
-      >
-        作成
-      </button>
-    </div>
+          <div className="flex flex-wrap gap-2">
+            <input
+              type="text"
+              value={newGroupName}
+              onChange={(e) =>
+                setNewGroupName(e.target.value)
+              }
+              placeholder="新しい共有リスト名"
+              className="min-w-56 flex-1 rounded-xl border border-neutral-300 px-3 py-2 text-base text-gray-800 outline-none"
+            />
 
-    {selectedGroupId && (
-      <>
-        <div className="flex gap-2">
-          <input
-            type="text"
-            value={editGroupName}
-            onChange={(e) =>
-              setEditGroupName(e.target.value)
-            }
-            placeholder="共有リスト名を変更"
-            className="flex-1 rounded-2xl border border-neutral-200 bg-white px-4 py-3 text-sm outline-none"
-          />
-
-          <button
-            type="button"
-            onClick={updateSharedGroupName}
-            className="rounded-2xl bg-neutral-800 px-4 py-3 text-sm font-bold text-white"
-          >
-            保存
-          </button>
+            <button
+              type="button"
+              onClick={createSharedGroup}
+              className={primaryBtn}
+            >
+              作成
+            </button>
+          </div>
         </div>
 
-        {isCurrentUserOwner && (
-          <button
-            type="button"
-            onClick={deleteSharedGroup}
-            className="rounded-2xl bg-red-50 px-4 py-3 text-sm font-bold text-red-500"
-          >
-            🗑 共有リスト削除
-          </button>
-        )}
+        {/* リスト名 */}
+        <div className="rounded-2xl bg-neutral-50 p-4 ring-1 ring-neutral-200">
+          <h3 className="mb-3 text-sm font-semibold text-neutral-700">
+            リスト名
+          </h3>
 
-        <div className="space-y-2">
-          <p className="text-sm font-bold text-neutral-700">
-            ✉️ メンバー招待
-          </p>
+          <div className="flex flex-wrap gap-2">
+            <input
+              type="text"
+              value={editGroupName}
+              onChange={(e) =>
+                setEditGroupName(e.target.value)
+              }
+              placeholder="共有リスト名"
+              className="min-w-56 flex-1 rounded-xl border border-neutral-300 px-3 py-2 text-base text-gray-800 outline-none"
+            />
 
-          <div className="flex gap-2">
+            <button
+              type="button"
+              onClick={updateSharedGroupName}
+              className={successBtn}
+            >
+              更新
+            </button>
+
+            {isCurrentUserOwner && (
+              <button
+                type="button"
+                onClick={deleteSharedGroup}
+                className={dangerBtn}
+              >
+                削除
+              </button>
+            )}
+          </div>
+        </div>
+
+        {/* メンバー追加 */}
+        <div className="rounded-2xl bg-neutral-50 p-4 ring-1 ring-neutral-200">
+          <h3 className="mb-3 text-sm font-semibold text-neutral-700">
+            メンバー追加/招待
+          </h3>
+
+          <div className="flex flex-wrap gap-2">
             <input
               type="email"
               value={inviteEmail}
               onChange={(e) =>
                 setInviteEmail(e.target.value)
               }
-              placeholder="メールアドレス"
-              className="flex-1 rounded-2xl border border-neutral-200 bg-white px-4 py-3 text-sm outline-none"
+              placeholder="メールアドレスを入力"
+              className="flex-1 rounded-xl border border-neutral-300 px-3 py-2 text-base focus:outline-none"
             />
 
             <button
               type="button"
               onClick={addGroupMember}
-              className="rounded-2xl bg-green-500 px-4 py-3 text-sm font-bold text-white"
+              className={primaryBtn}
             >
-              招待
+              追加
             </button>
           </div>
 
-          {inviteMessage && (
-            <p className="text-xs text-neutral-500">
-              {inviteMessage}
+          <div className="mt-3 rounded-xl bg-blue-50 p-3 text-xs text-blue-700">
+            <p className="font-semibold">
+              招待について
             </p>
-          )}
+
+            <p className="mt-1">
+              登録済みユーザーは自動追加されます。
+            </p>
+
+            <p className="mt-1">
+              未登録の場合は招待メールが送信されます。
+            </p>
+          </div>
         </div>
 
-        {groupMembers.length > 0 && (
-          <div className="space-y-2">
-            <p className="text-sm font-bold text-neutral-700">
-              👤 メンバー
+        {/* メンバー */}
+        <div className="rounded-2xl bg-neutral-50 p-4 ring-1 ring-neutral-200">
+          <h3 className="mb-3 text-sm font-semibold text-neutral-700">
+            メンバー（{groupMembers.length}）
+          </h3>
+
+          {groupMembers.length === 0 ? (
+            <p className="text-sm text-neutral-500">
+              メンバーがいません
             </p>
+          ) : (
+            <ul className="space-y-2">
+              {groupMembers.map((member) => (
+                <li
+                  key={`${member.user_id}-${member.role}`}
+                  className="flex items-center justify-between rounded-xl bg-white px-3 py-3 shadow-sm ring-1 ring-neutral-200"
+                >
+                  <div className="flex items-center gap-2">
+                    <span>
+                      {member.role === "owner"
+                        ? "👑"
+                        : "👤"}
+                    </span>
 
-            {groupMembers.map((member) => (
-              <div
-                key={member.user_id}
-                className="flex items-center justify-between rounded-2xl bg-white px-4 py-3 ring-1 ring-neutral-100"
-              >
-                <div>
-                  <p className="text-sm font-medium text-neutral-700">
-                    {member.display_name}
-                  </p>
+                    <span>
+                      {member.display_name}
+                    </span>
+                  </div>
 
-                  <p className="text-xs text-neutral-400">
-                    {member.role === "owner"
-                      ? "owner"
-                      : "member"}
-                  </p>
-                </div>
+                  {isCurrentUserOwner &&
+                    member.role === "member" &&
+                    member.user_id !== userId && (
+                      <button
+                        type="button"
+                        onClick={() =>
+                          removeGroupMember(
+                            member.user_id,
+                            member.role
+                          )
+                        }
+                        className="text-xs text-red-500 hover:underline"
+                      >
+                        削除
+                      </button>
+                    )}
 
-                {member.role !== "owner" &&
-                  isCurrentUserOwner && (
-                    <button
-                      type="button"
-                      onClick={() =>
-                        removeGroupMember(
-                          member.user_id,
-                          member.role
-                        )
-                      }
-                      className="rounded-xl bg-red-50 px-3 py-2 text-xs font-bold text-red-500"
-                    >
-                      削除
-                    </button>
-                  )}
-              </div>
-            ))}
-          </div>
-        )}
+                  {!isCurrentUserOwner &&
+                    member.user_id === userId &&
+                    member.role === "member" && (
+                      <button
+                        type="button"
+                        onClick={() =>
+                          removeGroupMember(
+                            member.user_id,
+                            member.role
+                          )
+                        }
+                        className="text-xs text-gray-500 hover:underline"
+                      >
+                        退出
+                      </button>
+                    )}
+                </li>
+              ))}
+            </ul>
+          )}
 
-        {pendingInvitations.length > 0 && (
-          <div className="space-y-2">
-            <p className="text-sm font-bold text-neutral-700">
-              🕊 招待中
-            </p>
+          {pendingInvitations.map((invite) => {
+            const inviteLink =
+              `${window.location.origin}/login?invite=${invite.id}`;
 
-            {pendingInvitations.map((invite) => (
+            return (
               <div
                 key={invite.id}
-                className="flex items-center justify-between rounded-2xl bg-white px-4 py-3 ring-1 ring-neutral-100"
+                className="px-2 py-2"
               >
-                <div>
-                  <p className="text-sm text-neutral-700">
-                    {invite.email}
-                  </p>
+                <p className="break-all text-sm text-neutral-800">
+                  {invite.email}
+                </p>
 
-                  <p className="text-xs text-neutral-400">
-                    招待待ち
-                  </p>
+                <div className="mt-1 flex flex-wrap gap-2">
+                  <span className="rounded-full bg-yellow-100 px-3 py-1 text-xs text-yellow-700">
+                    未参加
+                  </span>
+
+                  <button
+                    onClick={async () => {
+                      await navigator.clipboard.writeText(
+                        inviteLink
+                      );
+
+                      alert(
+                        "招待リンクをコピーしました！"
+                      );
+                    }}
+                    className="rounded-full bg-blue-100 px-3 py-1 text-xs font-semibold text-blue-600"
+                  >
+                    コピー
+                  </button>
+
+                  {isCurrentUserOwner && (
+                    <button
+                      onClick={() =>
+                        cancelInvitation(invite.id)
+                      }
+                      className="rounded-full bg-red-100 px-3 py-1 text-xs font-semibold text-red-600"
+                    >
+                      キャンセル
+                    </button>
+                  )}
                 </div>
-
-                <button
-                  type="button"
-                  onClick={() =>
-                    cancelInvitation(invite.id)
-                  }
-                  className="rounded-xl bg-red-50 px-3 py-2 text-xs font-bold text-red-500"
-                >
-                  キャンセル
-                </button>
               </div>
-            ))}
-          </div>
-        )}
-      </>
+            );
+          })}
+        </div>
+
+      </div>
     )}
   </div>
 )}
