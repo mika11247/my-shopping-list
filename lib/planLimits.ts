@@ -1,19 +1,25 @@
 export const getLimitByPlan = (
   role: string,
   plan: string,
-  type: "list" | "memo" | "master" | "group" | "member" | "history"
+  type:
+    | "list"
+    | "memo"
+    | "master"
+    | "group"
+    | "member"
+    | "history"
 ) => {
   if (role === "admin") return 9999;
 
   switch (type) {
     case "list":
       if (plan === "pro") return 200;
-      if (plan === "special") return 200;
+      if (plan === "special") return 80;
       return 50;
 
     case "memo":
       if (plan === "pro") return 200;
-      if (plan === "special") return 200;
+      if (plan === "special") return 50;
       return 30;
 
     case "master":
@@ -33,7 +39,7 @@ export const getLimitByPlan = (
 
     case "history":
       if (plan === "pro") return 200;
-      if (plan === "special") return 50;
+      if (plan === "special") return 80;
       return 50;
 
     default:

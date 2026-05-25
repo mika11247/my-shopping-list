@@ -566,34 +566,28 @@ onMouseLeave={(e) => {
 
   <div className="mt-4 flex flex-wrap gap-2">
     {[
-      ["default", "デフォルト"],
-      ["lime", "ライム"],
-      ["pink", "ピンク"],
-      ["sky", "スカイ"],
-      ["orange", "オレンジ"],
-      ["purple", "パープル"],
-    ].map(([value, label]) => (
-      <button
-        key={value}
-        onClick={() => changeTheme(value)}
-        className="rounded-full px-3 py-2 text-xs font-bold transition"
-        style={{
-          backgroundColor:
-            theme === value
-              ? "#111827"
-              : "#f3f4f6",
+  ["default", "🌿", "デフォルト"],
+  ["lime", "💚", "ライム"],
+  ["pink", "🩷", "ピンク"],
+  ["sky", "🩵", "スカイ"],
+  ["orange", "🧡", "オレンジ"],
+  ["purple", "💜", "パープル"],
+].map(([value, emoji, label]) => (
+  <button
+    key={value}
+    onClick={() => changeTheme(value)}
+    className="flex items-center gap-1 rounded-full px-3 py-2 text-xs font-bold transition"
+    style={{
+      backgroundColor:
+        theme === value ? "#111827" : "#f3f4f6",
+      color: theme === value ? "#ffffff" : "#6b7280",
+    }}
+  >
+    <span>{emoji}</span>
+    <span>{theme === value ? `${label} ✓` : label}</span>
+  </button>
+))}
 
-          color:
-            theme === value
-              ? "#ffffff"
-              : "#6b7280",
-        }}
-      >
-        {theme === value
-          ? `${label} ✓`
-          : label}
-      </button>
-    ))}
   </div>
 </div>
 

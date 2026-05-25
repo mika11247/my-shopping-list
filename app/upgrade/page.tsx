@@ -6,6 +6,9 @@ import { useRouter } from "next/navigation";
 export default function UpgradePage() {
   const router = useRouter();
 
+  const currentPlan: "free" | "special" | "pro" =
+  "free";
+
   return (
     <main className="min-h-screen bg-gradient-to-b from-indigo-50 via-white to-lime-50 p-4">
       <div className="mx-auto max-w-xl space-y-5">
@@ -46,6 +49,8 @@ export default function UpgradePage() {
         <section className="space-y-4">
           <PlanCard
             emoji="🆓"
+            currentPlan={currentPlan}
+ctaLabel="現在利用中"
             name="Free"
             label="基本プラン"
             badge="無料"
@@ -63,6 +68,8 @@ export default function UpgradePage() {
 
           <PlanCard
             emoji="🌙"
+            currentPlan={currentPlan}
+ctaLabel="β協力者特典"
             name="Special"
             label="β協力者特典"
             badge="β特典 / 無料"
@@ -82,6 +89,8 @@ export default function UpgradePage() {
 
           <PlanCard
             emoji="✨"
+            currentPlan={currentPlan}
+ctaLabel="月額300円予定"
             name="Pro"
             label="今後追加予定の正式プラン"
             badge="準備中"
@@ -141,6 +150,8 @@ function PlanCard({
   lead,
   items,
   tone,
+  currentPlan,
+ctaLabel,
 }: {
   emoji: string;
   name: string;
@@ -149,6 +160,8 @@ function PlanCard({
   lead: string;
   items: string[];
   tone: "free" | "special" | "pro";
+  currentPlan: "free" | "special" | "pro";
+ctaLabel: string;
 }) {
   const styles = {
     free: {
@@ -207,6 +220,29 @@ function PlanCard({
           </p>
         ))}
       </div>
+
+      <button
+  type="button"
+  disabled={tone === "pro"}
+  className={`mt-4 w-full rounded-2xl px-4 py-3 text-sm font-bold shadow-sm transition ${
+    currentPlan === tone
+      ? "bg-neutral-800 text-white"
+
+      : tone === "pro"
+      ? "bg-violet-500 text-white opacity-60"
+
+      : "bg-white text-neutral-700 ring-1 ring-neutral-200"
+  }`}
+>
+  {currentPlan === tone
+    ? "現在のプラン"
+
+    : tone === "pro"
+    ? "Stripe連携準備中"
+
+    : ctaLabel}
+</button>
+
     </article>
   );
 }
