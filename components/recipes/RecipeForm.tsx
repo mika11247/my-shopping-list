@@ -1,13 +1,14 @@
 "use client";
 
 import Header from "@/components/Header";
-import { isHttpUrl, type ItemMaster, type Recipe, type RecipeItemType } from "@/lib/recipes";
+import { getRecipeItemMaster, isHttpUrl, type ItemMaster, type Recipe, type RecipeItemType } from "@/lib/recipes";
 import { supabase } from "@/lib/supabase";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 
 type DraftItem = {
-  item_master_id: number;
+  master_id: number;
+  source: "common" | "user";
   name: string;
   item_type: RecipeItemType;
   amount_text: string;
@@ -39,20 +40,30 @@ export default function RecipeForm({ recipeId }: { recipeId?: string }) {
         return;
       }
       setUserId(auth.user.id);
-      const { data: masterData, error: masterError } = await supabase
-        .from("item_master")
-        .select("id, name, yomi, category, image_url")
-        .order("name");
-      if (masterError) {
-        setError(masterError.message);
+      const [commonResult, userResult] = await Promise.all([
+        supabase
+          .from("item_master")
+          .select("id, name, yomi, category, image_url")
+          .order("name"),
+        supabase
+          .from("user_item_master")
+          .select("id, name, yomi, category, image_url")
+          .eq("user_id", auth.user.id)
+          .order("name"),
+      ]);
+      if (commonResult.error || userResult.error) {
+        setError((commonResult.error ?? userResult.error)?.message ?? "アイテムの取得に失敗しました。");
         return;
       }
-      setMasters((masterData ?? []) as ItemMaster[]);
+      setMasters([
+        ...(userResult.data ?? []).map((item) => ({ ...item, source: "user" as const })),
+        ...(commonResult.data ?? []).map((item) => ({ ...item, source: "common" as const })),
+      ]);
 
       if (!recipeId) return;
       const { data, error: recipeError } = await supabase
         .from("recipes")
-        .select("*, recipe_items(*, item_master:item_master_id(id, name, yomi, category, image_url))")
+        .select("*, recipe_items(*, item_master:item_master_id(id, name, yomi, category, image_url), user_item_master:user_item_master_id(id, name, yomi, category, image_url))")
         .eq("id", recipeId)
         .single();
       if (recipeError) {
@@ -70,12 +81,16 @@ export default function RecipeForm({ recipeId }: { recipeId?: string }) {
       setItems(
         (recipe.recipe_items ?? [])
           .sort((a, b) => a.sort_order - b.sort_order)
-          .map((item) => ({
-            item_master_id: item.item_master_id,
-            name: item.item_master.name,
-            item_type: item.item_type,
-            amount_text: item.amount_text,
-          })),
+          .map((item) => {
+            const master = getRecipeItemMaster(item);
+            return {
+              master_id: master.id,
+              source: master.source,
+              name: master.name,
+              item_type: item.item_type,
+              amount_text: item.amount_text,
+            };
+          }),
       );
     };
     void load();
@@ -87,7 +102,7 @@ export default function RecipeForm({ recipeId }: { recipeId?: string }) {
     return masters
       .filter(
         (master) =>
-          !items.some((item) => item.item_master_id === master.id) &&
+          !items.some((item) => item.master_id === master.id && item.source === master.source) &&
           `${master.name} ${master.yomi ?? ""}`.toLowerCase().includes(needle),
       )
       .slice(0, 8);
@@ -159,7 +174,8 @@ export default function RecipeForm({ recipeId }: { recipeId?: string }) {
         const { error: itemError } = await supabase.from("recipe_items").insert(
           items.map((item, index) => ({
             recipe_id: savedId,
-            item_master_id: item.item_master_id,
+            item_master_id: item.source === "common" ? item.master_id : null,
+            user_item_master_id: item.source === "user" ? item.master_id : null,
             item_type: item.item_type,
             amount_text: item.amount_text.trim(),
             sort_order: index,
@@ -189,6 +205,8 @@ export default function RecipeForm({ recipeId }: { recipeId?: string }) {
           <section className="rounded-3xl bg-white p-5 shadow-sm ring-1 ring-neutral-200">
             <label className="block text-sm font-bold">レシピ名 *</label>
             <input className="mt-2 w-full rounded-2xl border border-neutral-200 px-4 py-3" value={name} onChange={(e) => setName(e.target.value)} maxLength={120} />
+            <label className="mt-4 block text-sm font-bold">補足メモ</label>
+            <input className="mt-2 w-full rounded-2xl border border-neutral-200 px-4 py-3" value={memo} onChange={(e) => setMemo(e.target.value)} maxLength={160} placeholder="例：〇〇さんのレシピ、炊飯器で作れる、夏向け" />
             <label className="mt-4 block text-sm font-bold">レシピ画像</label>
             {(imageFile || (imageUrl && !removeImage)) && (
               // eslint-disable-next-line @next/next/no-img-element
@@ -205,22 +223,20 @@ export default function RecipeForm({ recipeId }: { recipeId?: string }) {
             <input type="url" inputMode="url" placeholder="https://..." className="mt-2 w-full rounded-2xl border border-neutral-200 px-4 py-3" value={sourceUrl} onChange={(e) => setSourceUrl(e.target.value)} />
             <label className="mt-4 block text-sm font-bold">作り方メモ</label>
             <textarea rows={6} className="mt-2 w-full rounded-2xl border border-neutral-200 px-4 py-3" value={instructions} onChange={(e) => setInstructions(e.target.value)} />
-            <label className="mt-4 block text-sm font-bold">補足メモ</label>
-            <textarea rows={3} className="mt-2 w-full rounded-2xl border border-neutral-200 px-4 py-3" value={memo} onChange={(e) => setMemo(e.target.value)} />
             <label className="mt-4 flex items-center gap-3 font-bold"><input type="checkbox" className="h-5 w-5" checked={favorite} onChange={(e) => setFavorite(e.target.checked)} />お気に入り</label>
           </section>
 
           <section className="rounded-3xl bg-white p-5 shadow-sm ring-1 ring-neutral-200">
             <h2 className="text-lg font-black">材料・調味料</h2>
             <div className="relative mt-3">
-              <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="item_master を検索" className="w-full rounded-2xl border border-neutral-200 px-4 py-3" />
+              <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="アイテムを検索" className="w-full rounded-2xl border border-neutral-200 px-4 py-3" />
               {candidates.length > 0 && <div className="absolute z-10 mt-1 w-full overflow-hidden rounded-2xl bg-white shadow-xl ring-1 ring-neutral-200">
-                {candidates.map((master) => <button type="button" key={master.id} onClick={() => { setItems((current) => [...current, { item_master_id: master.id, name: master.name, item_type: "ingredient", amount_text: "" }]); setSearch(""); }} className="block w-full px-4 py-3 text-left hover:bg-lime-50">{master.name}<span className="ml-2 text-xs text-neutral-400">{master.category}</span></button>)}
+                {candidates.map((master) => <button type="button" key={`${master.source}-${master.id}`} onClick={() => { setItems((current) => [...current, { master_id: master.id, source: master.source, name: master.name, item_type: "ingredient", amount_text: "" }]); setSearch(""); }} className="flex w-full items-center gap-2 px-4 py-3 text-left hover:bg-lime-50"><span className="min-w-0 flex-1">{master.name}</span><span className={`rounded-full px-2 py-0.5 text-[11px] font-bold ${master.source === "user" ? "bg-pink-50 text-pink-600" : "bg-sky-50 text-sky-600"}`}>{master.source === "user" ? "マイアイテム" : "共通"}</span><span className="text-xs text-neutral-400">{master.category}</span></button>)}
               </div>}
             </div>
             <div className="mt-4 space-y-3">
-              {items.map((item, index) => <div key={item.item_master_id} className="rounded-2xl bg-neutral-50 p-3">
-                <div className="flex items-center justify-between gap-2"><strong>{item.name}</strong><div className="flex gap-1"><button type="button" aria-label="上へ" onClick={() => move(index, -1)} className="h-9 w-9 rounded-xl bg-white">↑</button><button type="button" aria-label="下へ" onClick={() => move(index, 1)} className="h-9 w-9 rounded-xl bg-white">↓</button><button type="button" onClick={() => setItems((current) => current.filter((_, i) => i !== index))} className="h-9 rounded-xl bg-red-50 px-3 text-red-600">削除</button></div></div>
+              {items.map((item, index) => <div key={`${item.source}-${item.master_id}`} className="rounded-2xl bg-neutral-50 p-3">
+                <div className="flex items-center justify-between gap-2"><div className="min-w-0"><strong>{item.name}</strong><span className="ml-2 rounded-full bg-white px-2 py-0.5 text-[11px] text-neutral-500">{item.source === "user" ? "マイアイテム" : "共通"}</span></div><div className="flex shrink-0 gap-1"><button type="button" aria-label="上へ" onClick={() => move(index, -1)} className="h-9 w-9 rounded-xl bg-white">↑</button><button type="button" aria-label="下へ" onClick={() => move(index, 1)} className="h-9 w-9 rounded-xl bg-white">↓</button><button type="button" onClick={() => setItems((current) => current.filter((_, i) => i !== index))} className="h-9 rounded-xl bg-red-50 px-3 text-red-600">削除</button></div></div>
                 <div className="mt-3 grid gap-2 sm:grid-cols-2">
                   <select value={item.item_type} onChange={(e) => setItems((current) => current.map((row, i) => i === index ? { ...row, item_type: e.target.value as RecipeItemType } : row))} className="rounded-xl border border-neutral-200 bg-white px-3 py-2"><option value="ingredient">食材</option><option value="seasoning">調味料</option></select>
                   <input value={item.amount_text} onChange={(e) => setItems((current) => current.map((row, i) => i === index ? { ...row, amount_text: e.target.value } : row))} placeholder="分量（例：2個、少々）" className="rounded-xl border border-neutral-200 px-3 py-2" />

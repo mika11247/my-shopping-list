@@ -53,6 +53,7 @@ export default function RecipesPage() {
               ) : <div className="flex h-44 items-center justify-center bg-gradient-to-br from-lime-100 to-sky-100 text-5xl" aria-label="画像なし">🍽️</div>}
               <div className="p-4">
                 <div className="flex items-start justify-between gap-2"><h2 className="text-lg font-black">{recipe.name}</h2>{recipe.is_favorite && <span title="お気に入り" className="text-amber-400">★</span>}</div>
+                {recipe.memo && <p className="mt-1 line-clamp-2 text-sm leading-5 text-neutral-500">{recipe.memo}</p>}
                 <p className="mt-2 text-sm text-neutral-500">材料・調味料 {recipe.recipe_items?.length ?? 0}件</p>
                 <Link href={`/recipes/${recipe.id}`} className="mt-4 block rounded-2xl bg-neutral-900 px-4 py-2.5 text-center text-sm font-bold text-white">詳細を見る</Link>
               </div>

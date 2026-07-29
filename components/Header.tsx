@@ -54,10 +54,10 @@ const [userPlan, setUserPlan] =
   };
 
   const menuItems = [
-    ["レシピノート 🍳", "/recipes"],
     ["TOP 🛒", "/"],
     ["マイページ 👤", "/profile"],
     ["マイアイテム 💖", "/master"],
+    ["レシピノート 🍳", "/recipes"],
     ["履歴 🕒", "/history"],
     ["ガイド ❓", "/guide"],
     ["お問い合わせ 📩", "/contact"],

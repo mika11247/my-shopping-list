@@ -2,6 +2,7 @@ export type RecipeItemType = "ingredient" | "seasoning";
 
 export type ItemMaster = {
   id: number;
+  source: "common" | "user";
   name: string;
   yomi: string | null;
   category: string | null;
@@ -11,11 +12,23 @@ export type ItemMaster = {
 export type RecipeItem = {
   id: number;
   recipe_id: string;
-  item_master_id: number;
+  item_master_id: number | null;
+  user_item_master_id: number | null;
   item_type: RecipeItemType;
   amount_text: string;
   sort_order: number;
-  item_master: ItemMaster;
+  item_master: Omit<ItemMaster, "source"> | null;
+  user_item_master: Omit<ItemMaster, "source"> | null;
+};
+
+export const getRecipeItemMaster = (item: RecipeItem): ItemMaster => {
+  if (item.user_item_master) {
+    return { ...item.user_item_master, source: "user" };
+  }
+  if (item.item_master) {
+    return { ...item.item_master, source: "common" };
+  }
+  throw new Error("材料のマスター情報を取得できません。");
 };
 
 export type Recipe = {
