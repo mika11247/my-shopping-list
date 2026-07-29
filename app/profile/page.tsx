@@ -5,6 +5,7 @@ import { useEffect, useState } from "react";
 import { supabase } from "../../lib/supabase";
 import { useRouter } from "next/navigation";
 import { getPlanLabel, getPlanColor } from "@/lib/planUI";
+import { getLimitByPlan } from "@/lib/planLimits";
 
 
 
@@ -17,11 +18,16 @@ export default function ProfilePage() {
   const [shoppingCount, setShoppingCount] = useState(0);
   const [masterCount, setMasterCount] = useState(0);
   const [historyCount, setHistoryCount] = useState(0);
+  const [recipeCount, setRecipeCount] = useState(0);
+  const [mealPlanCount, setMealPlanCount] = useState(0);
+  const [groupCount, setGroupCount] = useState(0);
+  const [memberCount, setMemberCount] = useState(0);
   const [loading, setLoading] = useState(true);
   const [message, setMessage] = useState("");
   const [provider, setProvider] = useState("");
 
   const [userPlan, setUserPlan] = useState<string>("free");
+  const [userRole, setUserRole] = useState<"admin" | "user">("user");
   const [theme, setTheme] = useState("default");
   const [fontSize, setFontSize] = useState("normal");
   const [density, setDensity] = useState("normal");
@@ -136,7 +142,14 @@ export default function ProfilePage() {
     );
     setProvider(user.app_metadata?.provider ?? "email");
 
-    const [{ count: shopping }, { count: master }, { count: history }] =
+    const [
+      { count: shopping },
+      { count: master },
+      { count: history },
+      { count: recipes },
+      { count: mealPlans },
+      ownedGroupsResult,
+    ] =
       await Promise.all([
         supabase
           .from("shopping_items")
@@ -152,11 +165,40 @@ export default function ProfilePage() {
           .from("deleted_items")
           .select("*", { count: "exact", head: true })
           .eq("user_id", user.id),
+
+        supabase
+          .from("recipes")
+          .select("id", { count: "exact", head: true })
+          .eq("user_id", user.id),
+
+        supabase
+          .from("meal_plans")
+          .select("id", { count: "exact", head: true })
+          .eq("user_id", user.id),
+
+        supabase
+          .from("groups")
+          .select("id")
+          .eq("owner_user_id", user.id),
       ]);
 
       setShoppingCount(shopping ?? 0);
       setMasterCount(master ?? 0);
       setHistoryCount(history ?? 0);
+      setRecipeCount(recipes ?? 0);
+      setMealPlanCount(mealPlans ?? 0);
+      const ownedGroupIds = (ownedGroupsResult.data ?? []).map((group) => group.id);
+      setGroupCount(ownedGroupIds.length);
+      if (ownedGroupIds.length > 0) {
+        const { count: members } = await supabase
+          .from("group_members")
+          .select("user_id", { count: "exact", head: true })
+          .in("group_id", ownedGroupIds)
+          .neq("user_id", user.id);
+        setMemberCount(members ?? 0);
+      } else {
+        setMemberCount(0);
+      }
        
       if (user) {
         await supabase.from("profiles").upsert({
@@ -178,6 +220,7 @@ if (profileError) {
   console.error("プロフィール取得エラー:", profileError);
 } else {
   setUserPlan(profile?.plan ?? "free");
+  setUserRole(profile?.role ?? "user");
 }
       
       setLoading(false);
@@ -555,7 +598,7 @@ style={{
     利用状況
   </p>
 
-  <div className="grid grid-cols-3 gap-3">
+  <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
     <div className="rounded-2xl bg-lime-50 p-3 text-center ring-1 ring-lime-100">
       <p className="text-xs text-gray-500">買い物リスト</p>
       <p className="mt-1 text-xl font-bold text-lime-700">
@@ -564,9 +607,38 @@ style={{
     </div>
 
     <div className="rounded-2xl bg-pink-50 p-3 text-center ring-1 ring-pink-100">
-      <p className="text-xs text-gray-500">My items</p>
-      <p className="mt-1 text-xl font-bold text-pink-600">
-        {masterCount}件
+      <p className="text-xs text-gray-500">マイアイテム</p>
+      <p className="mt-1 text-lg font-bold text-pink-600">
+        {masterCount} / {getLimitByPlan(userRole, userPlan, "master")}件
+      </p>
+    </div>
+
+    <div className="rounded-2xl p-3 text-center ring-1" style={{ backgroundColor: "var(--sub-bg)", borderColor: "var(--ring-color)" }}>
+      <p className="text-xs text-gray-500">共有リスト</p>
+      <p className="mt-1 text-lg font-bold" style={{ color: "var(--main-text)" }}>
+        {groupCount} / {getLimitByPlan(userRole, userPlan, "group")}件
+      </p>
+    </div>
+
+    <div className="rounded-2xl p-3 text-center ring-1" style={{ backgroundColor: "var(--sub-bg)", borderColor: "var(--ring-color)" }}>
+      <p className="text-xs text-gray-500">共有メンバー</p>
+      <p className="mt-1 text-lg font-bold" style={{ color: "var(--main-text)" }}>
+        {memberCount}人
+      </p>
+      <p className="mt-1 text-[10px] text-gray-500">1リスト {getLimitByPlan(userRole, userPlan, "member")}人まで</p>
+    </div>
+
+    <div className="rounded-2xl p-3 text-center ring-1" style={{ backgroundColor: "var(--sub-bg)", borderColor: "var(--ring-color)" }}>
+      <p className="text-xs text-gray-500">レシピノート</p>
+      <p className="mt-1 text-lg font-bold" style={{ color: "var(--main-text)" }}>
+        {recipeCount} / {getLimitByPlan(userRole, userPlan, "recipe")}件
+      </p>
+    </div>
+
+    <div className="rounded-2xl p-3 text-center ring-1" style={{ backgroundColor: "var(--sub-bg)", borderColor: "var(--ring-color)" }}>
+      <p className="text-xs text-gray-500">献立リスト</p>
+      <p className="mt-1 text-lg font-bold" style={{ color: "var(--main-text)" }}>
+        {mealPlanCount} / {getLimitByPlan(userRole, userPlan, "mealPlan")}件
       </p>
     </div>
 

@@ -2,6 +2,7 @@
 
 import Header from "@/components/Header";
 import { RECIPE_CATEGORIES } from "@/lib/recipeMetadata";
+import { getLimitByPlan } from "@/lib/planLimits";
 import { getRecipeItemMaster, isHttpUrl, type ItemMaster, type Recipe, type RecipeItemType } from "@/lib/recipes";
 import { supabase } from "@/lib/supabase";
 import { useAppTheme } from "@/lib/useAppTheme";
@@ -36,6 +37,9 @@ export default function RecipeForm({ recipeId }: { recipeId?: string }) {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
   const theme = useAppTheme();
+  const [userPlan, setUserPlan] = useState("free");
+  const [userRole, setUserRole] = useState<"admin" | "user">("user");
+  const [recipeCount, setRecipeCount] = useState(0);
 
   useEffect(() => {
     const load = async () => {
@@ -45,6 +49,15 @@ export default function RecipeForm({ recipeId }: { recipeId?: string }) {
         return;
       }
       setUserId(auth.user.id);
+      const [profileResult, countResult] = await Promise.all([
+        supabase.from("profiles").select("role, plan").eq("user_id", auth.user.id).single(),
+        supabase.from("recipes").select("id", { count: "exact", head: true }).eq("user_id", auth.user.id),
+      ]);
+      if (profileResult.data) {
+        setUserPlan(profileResult.data.plan ?? "free");
+        setUserRole(profileResult.data.role ?? "user");
+      }
+      setRecipeCount(countResult.count ?? 0);
       const [commonResult, userResult] = await Promise.all([
         supabase
           .from("item_master")
@@ -135,6 +148,18 @@ export default function RecipeForm({ recipeId }: { recipeId?: string }) {
       return setError("何人分は1以上の整数で入力してください。");
     }
     if (!userId) return;
+    if (!recipeId) {
+      const { count, error: countError } = await supabase
+        .from("recipes")
+        .select("id", { count: "exact", head: true })
+        .eq("user_id", userId);
+      if (countError) return setError(countError.message);
+      const limit = getLimitByPlan(userRole, userPlan, "recipe");
+      if ((count ?? 0) >= limit) {
+        setRecipeCount(count ?? 0);
+        return setError(`現在のプランで登録できるレシピ数の上限に達しました。レシピノート ${count ?? 0} / ${limit}件`);
+      }
+    }
     setSaving(true);
 
     let nextPath = removeImage ? null : imagePath;
@@ -215,6 +240,10 @@ export default function RecipeForm({ recipeId }: { recipeId?: string }) {
       <div className="mx-auto max-w-3xl">
         <Header title={recipeId ? "レシピを編集" : "レシピを作成"} subtitle="RECIPE NOTE" />
         <form onSubmit={save} className="space-y-5">
+          {!recipeId && <div className="recipe-soft rounded-2xl px-4 py-3 text-sm font-bold">
+            <p>レシピノート {recipeCount} / {getLimitByPlan(userRole, userPlan, "recipe")}件</p>
+            {recipeCount >= getLimitByPlan(userRole, userPlan, "recipe") && <p className="mt-1 text-red-700">現在のプランで登録できるレシピ数の上限に達しました。</p>}
+          </div>}
           <section className="recipe-card rounded-3xl border p-5">
             <label className="block text-sm font-bold">レシピ名 *</label>
             <input className="recipe-input mt-2 w-full rounded-2xl border px-4 py-3" value={name} onChange={(e) => setName(e.target.value)} maxLength={120} />
@@ -271,7 +300,7 @@ export default function RecipeForm({ recipeId }: { recipeId?: string }) {
             <textarea rows={7} className="recipe-input mt-3 w-full rounded-2xl border px-4 py-3" value={instructions} onChange={(e) => setInstructions(e.target.value)} />
           </section>
           {error && <p role="alert" className="rounded-2xl bg-red-50 p-3 text-sm text-red-700">{error}</p>}
-          <div className="flex gap-3 pb-8"><button type="button" onClick={() => router.back()} className="recipe-card flex-1 rounded-2xl border px-5 py-3 font-bold">戻る</button><button disabled={saving} className="recipe-accent-button flex-1 rounded-2xl px-5 py-3 font-black disabled:opacity-50">{saving ? "保存中…" : "保存する"}</button></div>
+          <div className="flex gap-3 pb-8"><button type="button" onClick={() => router.back()} className="recipe-card flex-1 rounded-2xl border px-5 py-3 font-bold">戻る</button><button disabled={saving || (!recipeId && recipeCount >= getLimitByPlan(userRole, userPlan, "recipe"))} className="recipe-accent-button flex-1 rounded-2xl px-5 py-3 font-black disabled:opacity-50">{saving ? "保存中…" : "保存する"}</button></div>
         </form>
       </div>
     </main>

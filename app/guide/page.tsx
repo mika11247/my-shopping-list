@@ -45,6 +45,30 @@ export default function GuidePage() {
           </div>
         </section>
 
+        <section className="rounded-3xl bg-white p-5 shadow-sm ring-1 ring-orange-100">
+          <h2 className="mb-4 border-l-4 border-orange-400 pl-3 font-bold text-orange-500">
+            レシピノート 📖
+          </h2>
+          <div className="grid gap-3">
+            <GuideItem icon="🖼️" title="画像付きで保存" text="画像、参照URL、補足メモ、お気に入り、カテゴリー、基準人数を登録できます。" />
+            <GuideItem icon="🥕" title="材料・調味料" text="共通アイテムとマイアイテムを、食材・調味料として利用できます。" />
+            <GuideItem icon="🛒" title="買い物リストへ追加" text="材料を個人または共有の買い物リストへ追加できます。" />
+            <GuideItem icon="🔍" title="検索・絞り込み" text="レシピ検索とお気に入り絞り込みに対応しています。" />
+          </div>
+        </section>
+
+        <section className="rounded-3xl bg-white p-5 shadow-sm ring-1 ring-orange-100">
+          <h2 className="mb-4 border-l-4 border-orange-400 pl-3 font-bold text-orange-500">
+            献立リスト 🍽️
+          </h2>
+          <div className="grid gap-3">
+            <GuideItem icon="📅" title="7日間の献立" text="開始日から7日間、朝・昼・夜ごとに献立を登録できます。" />
+            <GuideItem icon="📖" title="レシピを選択" text="1つの食事枠へ、レシピノートから複数のレシピを登録できます。" />
+            <GuideItem icon="✏️" title="自由入力" text="外食、お弁当、残り物、各自、未定などはタイトルだけでも登録できます。" />
+            <GuideItem icon="👥" title="共有献立" text="既存の共有買い物リストのメンバーが閲覧できます。Ver1では編集・削除は作成者のみ可能です。" />
+          </div>
+        </section>
+
         <section className="rounded-3xl bg-orange-100 p-5 shadow-sm ring-1 ring-orange-200">
           <h2 className="mb-2 font-bold text-orange-700">ワンポイント 🍊</h2>
           <p className="text-sm leading-relaxed text-orange-800">
