@@ -4,6 +4,7 @@ import Header from "@/components/Header";
 import { getRecipeItemMaster, type Recipe, type RecipeItem, type RecipeItemType } from "@/lib/recipes";
 import { addOrMergeShoppingItem } from "@/lib/shoppingItems";
 import { supabase } from "@/lib/supabase";
+import { useAppTheme } from "@/lib/useAppTheme";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
@@ -18,6 +19,7 @@ export default function RecipeDetail({ recipeId }: { recipeId: string }) {
   const [error, setError] = useState("");
   const [groups, setGroups] = useState<GroupOption[]>([]);
   const [target, setTarget] = useState("personal");
+  const theme = useAppTheme();
 
   useEffect(() => {
     const load = async () => {
@@ -124,43 +126,51 @@ export default function RecipeDetail({ recipeId }: { recipeId: string }) {
   const seasonings = recipe.recipe_items?.filter((item) => item.item_type === "seasoning") ?? [];
 
   return (
-    <main className="min-h-screen bg-gradient-to-b from-lime-50 via-white to-sky-50 p-4 text-neutral-800 sm:p-6">
+    <main className={`recipe-page recipe ${theme} p-4 sm:p-6`}>
       <div className="mx-auto max-w-4xl">
         <Header title={recipe.name} subtitle="RECIPE DETAIL" />
-        <div className="grid gap-5 md:grid-cols-[minmax(0,1fr)_minmax(280px,0.8fr)]">
-          <div className="space-y-5">
-            <section className="overflow-hidden rounded-3xl bg-white shadow-sm ring-1 ring-neutral-200">
-              {recipe.image_url ? (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img src={recipe.image_url} alt={recipe.name} className="max-h-[28rem] w-full object-cover" />
-              ) : <div className="flex h-56 items-center justify-center bg-gradient-to-br from-lime-100 to-sky-100 text-6xl">🍽️</div>}
-              <div className="p-5">
-                <div className="flex items-center gap-2"><h1 className="text-2xl font-black">{recipe.name}</h1>{recipe.is_favorite && <span className="text-xl text-amber-400">★</span>}</div>
-                {recipe.memo && <p className="mt-2 text-sm leading-6 text-neutral-500">{recipe.memo}</p>}
-                {recipe.source_url && <a href={recipe.source_url} target="_blank" rel="noopener noreferrer" className="mt-4 inline-block rounded-2xl bg-sky-50 px-4 py-2 font-bold text-sky-700">参照レシピを開く ↗</a>}
-              </div>
-            </section>
-            {recipe.instructions && <section className="rounded-3xl bg-white p-5 shadow-sm ring-1 ring-neutral-200">
-              {recipe.instructions && <><h2 className="font-black">作り方メモ</h2><p className="mt-2 whitespace-pre-wrap leading-7">{recipe.instructions}</p></>}
-            </section>}
-          </div>
-          <div className="space-y-5">
-            <section className="rounded-3xl bg-white p-5 shadow-sm ring-1 ring-neutral-200">
+        <div className="space-y-5">
+          <section className="recipe-card overflow-hidden rounded-3xl border">
+            {recipe.image_url ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={recipe.image_url} alt={recipe.name} className="max-h-[28rem] w-full object-cover" />
+            ) : <div className="recipe-soft flex h-56 items-center justify-center text-6xl">🍽️</div>}
+            <div className="p-5">
+              <div className="flex items-center gap-2"><h1 className="recipe-heading text-2xl font-black">{recipe.name}</h1>{recipe.is_favorite && <span className="recipe-heading text-xl">★</span>}</div>
+              {recipe.memo && <p className="recipe-muted mt-2 text-sm leading-6">{recipe.memo}</p>}
+              {(recipe.category || recipe.servings) && <div className="mt-3 flex flex-wrap gap-2">
+                {recipe.category && <span className="recipe-source-badge rounded-full px-3 py-1 text-sm font-bold">{recipe.category}</span>}
+                {recipe.servings && <span className="recipe-source-badge rounded-full px-3 py-1 text-sm font-bold">{recipe.servings}人分</span>}
+              </div>}
+              {recipe.source_url && <a href={recipe.source_url} target="_blank" rel="noopener noreferrer" className="recipe-accent-outline mt-4 inline-block rounded-2xl border px-4 py-2 font-bold">参照レシピを開く ↗</a>}
+            </div>
+          </section>
+
+          <div className="grid items-start gap-5 md:grid-cols-[minmax(0,1fr)_minmax(280px,0.8fr)]">
+            <div className="space-y-5">
+              {([["食材", ingredients], ["調味料", seasonings]] as const).map(([label, rows]) => rows.length > 0 && <section key={label} className="recipe-card rounded-3xl border p-5"><h2 className="recipe-heading font-black">{label}</h2><div className="mt-3 divide-y" style={{ borderColor: "var(--ring-color)" }}>{rows.map((item) => { const master = getRecipeItemMaster(item); return <div key={item.id} className="flex items-center gap-3 py-3"><div className="min-w-0 flex-1"><p className="font-bold">{master.name}<span className="recipe-source-badge ml-2 rounded-full px-2 py-0.5 text-[11px] font-normal">{master.source === "user" ? "マイアイテム" : "共通"}</span></p><p className="recipe-muted text-sm">{item.amount_text || "分量記載なし"}</p></div><button disabled={busy} onClick={() => void addItems([item])} aria-label={`${master.name}を${targetName}に追加`} title={`${targetName}に追加`} className="recipe-accent-outline h-10 w-10 shrink-0 rounded-2xl border text-xl font-black">＋</button></div>; })}</div></section>)}
+              {!recipe.recipe_items?.length && <section className="recipe-card recipe-muted rounded-3xl border p-6 text-center">材料・調味料は登録されていません。</section>}
+            </div>
+            <section className="recipe-card rounded-3xl border p-5">
               <h2 className="text-lg font-black">買い物リストへ追加</h2>
               <label className="mt-3 block text-sm font-bold" htmlFor="shopping-target">追加先</label>
-              <select id="shopping-target" value={target} onChange={(event) => changeTarget(event.target.value)} className="mt-2 w-full rounded-2xl border border-neutral-200 bg-white px-4 py-3 font-bold">
+              <select id="shopping-target" value={target} onChange={(event) => changeTarget(event.target.value)} className="recipe-select mt-2 w-full rounded-2xl border px-4 py-3 font-bold">
                 <option value="personal">個人リスト</option>
                 {groups.map((group) => <option key={group.id} value={group.id}>共有リスト：{group.name}</option>)}
               </select>
-              {groups.length === 0 && <p className="mt-2 text-xs leading-5 text-neutral-500">参加中の共有リストがないため、個人リストへ追加します。</p>}
-              <p className="mt-3 rounded-xl bg-neutral-50 px-3 py-2 text-sm">現在の追加先：<strong>{targetName}</strong></p>
-              <div className="mt-3 grid gap-2"><button disabled={busy || !ingredients.length} onClick={() => void addType("ingredient")} className="rounded-2xl bg-lime-500 px-4 py-3 font-bold text-white disabled:opacity-40">{targetName}に食材を追加</button><button disabled={busy || !seasonings.length} onClick={() => void addType("seasoning")} className="rounded-2xl bg-sky-500 px-4 py-3 font-bold text-white disabled:opacity-40">{targetName}に調味料を追加</button><button disabled={busy || !recipe.recipe_items?.length} onClick={() => void addType()} className="rounded-2xl bg-neutral-900 px-4 py-3 font-bold text-white disabled:opacity-40">{targetName}にすべて追加</button></div>
+              {groups.length === 0 && <p className="recipe-muted mt-2 text-xs leading-5">参加中の共有リストがないため、個人リストへ追加します。</p>}
+              <p className="recipe-soft mt-3 rounded-xl px-3 py-2 text-sm">現在の追加先：<strong>{targetName}</strong></p>
+              <div className="mt-3 grid gap-2"><button disabled={busy || !ingredients.length} onClick={() => void addType("ingredient")} className="recipe-accent-button rounded-2xl px-4 py-3 font-bold disabled:opacity-40">{targetName}に食材を追加</button><button disabled={busy || !seasonings.length} onClick={() => void addType("seasoning")} className="recipe-accent-button rounded-2xl px-4 py-3 font-bold disabled:opacity-40">{targetName}に調味料を追加</button><button disabled={busy || !recipe.recipe_items?.length} onClick={() => void addType()} className="recipe-accent-button rounded-2xl px-4 py-3 font-bold disabled:opacity-40">{targetName}にすべて追加</button></div>
               {message && <p className="mt-3 rounded-xl bg-green-50 p-3 text-sm text-green-700">{message}</p>}
               {error && <p className="mt-3 rounded-xl bg-red-50 p-3 text-sm text-red-700">{error}</p>}
             </section>
-            {([["食材", ingredients], ["調味料", seasonings]] as const).map(([label, rows]) => rows.length > 0 && <section key={label} className="rounded-3xl bg-white p-5 shadow-sm ring-1 ring-neutral-200"><h2 className="font-black">{label}</h2><div className="mt-3 divide-y divide-neutral-100">{rows.map((item) => { const master = getRecipeItemMaster(item); return <div key={item.id} className="flex items-center gap-3 py-3"><div className="min-w-0 flex-1"><p className="font-bold">{master.name}<span className="ml-2 rounded-full bg-neutral-50 px-2 py-0.5 text-[11px] font-normal text-neutral-500">{master.source === "user" ? "マイアイテム" : "共通"}</span></p><p className="text-sm text-neutral-500">{item.amount_text || "分量記載なし"}</p></div><button disabled={busy} onClick={() => void addItems([item])} aria-label={`${master.name}を${targetName}に追加`} title={`${targetName}に追加`} className="h-10 w-10 shrink-0 rounded-2xl bg-lime-100 text-xl font-black text-lime-700">＋</button></div>; })}</div></section>)}
-            <div className="flex gap-2"><Link href={`/recipes/${recipe.id}/edit`} className="flex-1 rounded-2xl bg-white px-4 py-3 text-center font-bold ring-1 ring-neutral-200">編集</Link><button disabled={busy} onClick={() => void removeRecipe()} className="flex-1 rounded-2xl bg-red-50 px-4 py-3 font-bold text-red-600">削除</button></div>
           </div>
+
+          {recipe.instructions && <section className="recipe-card rounded-3xl border p-5">
+            <h2 className="recipe-heading font-black">作り方メモ</h2>
+            <p className="mt-2 whitespace-pre-wrap leading-7">{recipe.instructions}</p>
+          </section>}
+          <div className="flex gap-2"><Link href={`/recipes/${recipe.id}/edit`} className="recipe-card flex-1 rounded-2xl border px-4 py-3 text-center font-bold">編集</Link><button disabled={busy} onClick={() => void removeRecipe()} className="flex-1 rounded-2xl bg-red-50 px-4 py-3 font-bold text-red-600">削除</button></div>
         </div>
       </div>
     </main>

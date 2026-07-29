@@ -41,6 +41,15 @@
   --ring-color: #bae6fd;
 }
 
+.default.recipe {
+  --bg-gradient: linear-gradient(to bottom, #f7fee7, #ffffff);
+  --main-color: #84cc16;
+  --main-bg: #ecfccb;
+  --main-text: #3f6212;
+  --sub-bg: #f7fee7;
+  --ring-color: #d9f99d;
+}
+
 .default.guide {
   --bg-gradient: linear-gradient(to bottom, #fed7aa, #ffffff);
   --main-color: #f97316;
@@ -125,3 +134,52 @@ body {
   font-family: Arial, Helvetica, sans-serif;
 }
 
+/* Recipe screens reuse the existing application theme variables. */
+.recipe-page {
+  min-height: 100vh;
+  background: var(--bg-gradient);
+  color: #262626;
+}
+
+.recipe-card,
+.recipe-input,
+.recipe-select,
+.recipe-search-results {
+  background-color: rgba(255, 255, 255, 0.94);
+  border-color: var(--ring-color);
+}
+
+.recipe-card {
+  box-shadow: 0 1px 3px rgb(0 0 0 / 0.08);
+}
+
+.recipe-heading,
+.recipe-link {
+  color: var(--main-text);
+}
+
+.recipe-muted {
+  color: #737373;
+}
+
+.recipe-soft {
+  background-color: color-mix(in srgb, var(--sub-bg) 72%, white);
+}
+
+.recipe-accent-button {
+  background-color: var(--main-color);
+  color: white;
+}
+
+.recipe-accent-outline,
+.recipe-source-badge {
+  background-color: color-mix(in srgb, var(--main-bg) 72%, white);
+  color: var(--main-text);
+  border-color: var(--ring-color);
+}
+
+.recipe-input:focus,
+.recipe-select:focus {
+  outline: 2px solid var(--ring-color);
+  outline-offset: 1px;
+}

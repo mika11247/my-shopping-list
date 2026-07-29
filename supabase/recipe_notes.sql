@@ -13,6 +13,11 @@ create table if not exists public.recipes (
   ),
   instructions text,
   memo text,
+  category text check (
+    category is null
+    or (char_length(trim(category)) between 1 and 50)
+  ),
+  servings integer check (servings is null or servings >= 1),
   is_favorite boolean not null default false,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
@@ -38,6 +43,8 @@ create index if not exists recipes_user_updated_idx
   on public.recipes(user_id, updated_at desc);
 create index if not exists recipes_user_favorite_idx
   on public.recipes(user_id, is_favorite) where is_favorite = true;
+create index if not exists recipes_user_category_idx
+  on public.recipes(user_id, category);
 create index if not exists recipe_items_recipe_sort_idx
   on public.recipe_items(recipe_id, sort_order);
 create index if not exists recipe_items_master_idx

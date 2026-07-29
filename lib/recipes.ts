@@ -40,6 +40,8 @@ export type Recipe = {
   source_url: string | null;
   instructions: string | null;
   memo: string | null;
+  category: string | null;
+  servings: number | null;
   is_favorite: boolean;
   created_at: string;
   updated_at: string;
