@@ -1,138 +1,246 @@
 "use client";
 
 import Header from "@/components/Header";
+import { getLimitByPlan } from "@/lib/planLimits";
+import { supabase } from "@/lib/supabase";
+import { useAppTheme } from "@/lib/useAppTheme";
 import { useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
+
+type DisplayPlan = "free" | "special" | "pro";
+type LimitType =
+  | "list"
+  | "memo"
+  | "master"
+  | "group"
+  | "member"
+  | "history"
+  | "recipe"
+  | "mealPlan";
+
+type FeatureGroup = {
+  title: string;
+  items: Array<{ label: string; value: string }>;
+};
+
+const PLAN_DETAILS: Record<
+  DisplayPlan,
+  {
+    emoji: string;
+    name: string;
+    label: string;
+    badge: string;
+    description: string;
+  }
+> = {
+  free: {
+    emoji: "🌱",
+    name: "Free",
+    label: "基本プラン",
+    badge: "無料",
+    description:
+      "まずはここから。買い物リスト・レシピ・献立を気軽に試せる基本プランです。",
+  },
+  special: {
+    emoji: "🌙",
+    name: "Special",
+    label: "β協力者特典",
+    badge: "無料特典",
+    description:
+      "β版に協力してくださる方向けの無料特典プランです。登録上限とカスタマイズ機能が広がります。",
+  },
+  pro: {
+    emoji: "✨",
+    name: "Pro",
+    label: "正式プラン",
+    badge: "準備中",
+    description:
+      "たくさん登録したい方や、家族との共有をより活用したい方向けに準備中の正式プランです。",
+  },
+};
+
+const CUSTOMIZATION_ITEMS = [
+  "all表示モード",
+  "テーマ変更",
+  "文字サイズ変更",
+  "表示密度変更",
+  "画像拡大表示",
+];
+
+function limit(plan: DisplayPlan, type: LimitType) {
+  return getLimitByPlan("user", plan, type);
+}
+
+function getFeatureGroups(plan: DisplayPlan): FeatureGroup[] {
+  return [
+    {
+      title: "基本機能",
+      items: [
+        { label: "買い物リスト", value: `${limit(plan, "list")}件` },
+        { label: "一時メモ", value: `${limit(plan, "memo")}件` },
+        { label: "マイアイテム", value: `${limit(plan, "master")}件` },
+        { label: "購入履歴", value: `${limit(plan, "history")}件` },
+      ],
+    },
+    {
+      title: "共有機能",
+      items: [
+        { label: "共有リスト", value: `${limit(plan, "group")}個` },
+        {
+          label: "共有メンバー",
+          value: `1リストあたり${limit(plan, "member")}人`,
+        },
+      ],
+    },
+    {
+      title: "レシピ・献立",
+      items: [
+        { label: "レシピノート", value: `${limit(plan, "recipe")}件` },
+        { label: "献立リスト", value: `${limit(plan, "mealPlan")}件` },
+      ],
+    },
+  ];
+}
 
 export default function UpgradePage() {
   const router = useRouter();
+  const theme = useAppTheme();
+  const [currentPlan, setCurrentPlan] = useState<DisplayPlan | null>(null);
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [errorMessage, setErrorMessage] = useState("");
 
-  const currentPlan: "free" | "special" | "pro" =
-  "free";
+  useEffect(() => {
+    let active = true;
+
+    const fetchCurrentPlan = async () => {
+      const {
+        data: { user },
+        error: authError,
+      } = await supabase.auth.getUser();
+
+      if (!active) return;
+
+      if (authError || !user) {
+        router.replace("/login");
+        return;
+      }
+
+      const { data: profile, error: profileError } = await supabase
+        .from("profiles")
+        .select("role, plan")
+        .eq("user_id", user.id)
+        .single();
+
+      if (!active) return;
+
+      if (profileError) {
+        console.error("プロフィール取得エラー:", profileError);
+        setErrorMessage("現在のプランを取得できませんでした。");
+        setLoading(false);
+        return;
+      }
+
+      const admin = profile?.role === "admin";
+      const profilePlan = profile?.plan;
+      const displayPlan: DisplayPlan = admin
+        ? "pro"
+        : profilePlan === "special" || profilePlan === "pro"
+          ? profilePlan
+          : "free";
+
+      setIsAdmin(admin);
+      setCurrentPlan(displayPlan);
+      setLoading(false);
+    };
+
+    void fetchCurrentPlan();
+
+    return () => {
+      active = false;
+    };
+  }, [router]);
 
   return (
-    <main className="min-h-screen bg-gradient-to-b from-indigo-50 via-white to-lime-50 p-4">
-      <div className="mx-auto max-w-xl space-y-5">
-        <Header subtitle="Upgrade" title="プランについて 🌙" />
+    <main className={`recipe-page ${theme} min-h-screen p-4`}>
+      <div className="mx-auto max-w-6xl space-y-5">
+        <Header subtitle="Upgrade" title="プランについて ✨" />
 
-        <section className="overflow-hidden rounded-3xl border border-indigo-100 bg-white shadow-sm">
-          <div className="bg-gradient-to-br from-indigo-50 via-sky-50 to-lime-50 p-5">
-            <p className="text-xs font-bold tracking-[0.2em] text-indigo-400">
-              MY SHOPPING LIST
+        <section className="recipe-card overflow-hidden rounded-3xl border shadow-sm">
+          <div className="p-5 sm:p-7">
+            <p className="text-xs font-bold tracking-[0.2em] opacity-60">
+              M.GLITTER
             </p>
-
-            <h2 className="mt-2 text-2xl font-bold text-neutral-800">
-              毎日の買い物を、もっと自分らしく。
-            </h2>
-
-            <p className="mt-3 text-sm leading-7 text-neutral-600">
-              My Shopping List は、無料でも毎日しっかり使えることを大切にしています。
-              <br />
-              プランは「機能を奪うため」ではなく、
-              もっと快適に、もっと自分好みに使うための仕組みです。
+            <h1 className="mt-2 text-2xl font-black sm:text-3xl">
+              暮らしに合わせて選べるプラン
+            </h1>
+            <p className="mt-3 max-w-3xl text-sm leading-7 opacity-75">
+              β版ではFreeプランを基本に、協力してくださる方へSpecial特典をご用意しています。
+              Proプランは、共有や登録数をもっと活用したい方向けに準備中です。
             </p>
           </div>
+        </section>
 
-          <div className="p-5">
-            <div className="rounded-2xl bg-lime-50 p-4 ring-1 ring-lime-100">
-              <p className="text-sm font-bold text-lime-700">
-                🌱 現在β版として育成中です
-              </p>
-
-              <p className="mt-2 text-xs leading-6 text-neutral-600">
-                Specialプランは、β版にご協力いただいている方への無料特典です。
-                将来的には、よりたくさん使いたい方向けに Pro プランを用意していく予定です。
-              </p>
+        {loading ? (
+          <section
+            className="recipe-card rounded-3xl border p-8 text-center shadow-sm"
+            aria-live="polite"
+          >
+            <div className="mx-auto h-8 w-8 animate-spin rounded-full border-4 border-current border-r-transparent opacity-50" />
+            <p className="mt-4 text-sm font-bold">プラン情報を読み込み中…</p>
+          </section>
+        ) : errorMessage || !currentPlan ? (
+          <section
+            className="rounded-3xl border border-red-200 bg-red-50 p-5 text-sm font-bold text-red-700 shadow-sm"
+            role="alert"
+          >
+            {errorMessage || "現在のプランを確認できませんでした。"}
+          </section>
+        ) : (
+          <>
+            <div
+              className="recipe-card rounded-2xl border px-4 py-3 text-sm shadow-sm"
+              aria-live="polite"
+            >
+              現在のプラン：
+              <strong className="ml-1">
+                {PLAN_DETAILS[currentPlan].name}
+                {isAdmin ? "（管理者・Pro相当）" : ""}
+              </strong>
             </div>
-          </div>
-        </section>
 
-        <section className="space-y-4">
-          <PlanCard
-            emoji="🆓"
-            currentPlan={currentPlan}
-ctaLabel="現在利用中"
-            name="Free"
-            label="基本プラン"
-            badge="無料"
-            tone="free"
-            lead="まずはここから。毎日の買い物メモとして十分使えるプランです。"
-            items={[
-              "買い物リスト 50件",
-              "一時メモ 30件",
-              "My items 30件",
-              "共有リスト 1個",
-              "メンバー 2人",
-              "履歴 50件",
-            ]}
-          />
+            <section className="grid min-w-0 gap-5 lg:grid-cols-3">
+              {(["free", "special", "pro"] as const).map((plan) => (
+                <PlanCard
+                  key={plan}
+                  plan={plan}
+                  currentPlan={currentPlan}
+                />
+              ))}
+            </section>
+          </>
+        )}
 
-          <PlanCard
-            emoji="🌙"
-            currentPlan={currentPlan}
-ctaLabel="β協力者特典"
-            name="Special"
-            label="β協力者特典"
-            badge="β特典 / 無料"
-            tone="special"
-            lead="β版に協力してくださる方向けの特典プランです。自分好みに使いやすくできます。"
-            items={[
-              "買い物リスト 80件",
-              "一時メモ 50件",
-              "My items 50件",
-              "all表示モード",
-              "テーマ変更",
-              "文字サイズ変更",
-              "表示密度変更",
-              "画像拡大表示",
-            ]}
-          />
-
-          <PlanCard
-            emoji="✨"
-            currentPlan={currentPlan}
-ctaLabel="月額300円予定"
-            name="Pro"
-            label="今後追加予定の正式プラン"
-            badge="準備中"
-            tone="pro"
-            lead="たくさん使いたい方、共有や履歴をしっかり活用したい方向けに準備中です。"
-            items={[
-              "買い物リスト 200件",
-              "一時メモ 200件",
-              "My items 200件",
-              "共有リスト 3個",
-              "メンバー 5人",
-              "履歴 200件",
-              "CSV機能（予定）",
-              "画像管理（予定）",
-            ]}
-          />
-        </section>
-
-        <section className="rounded-3xl border border-amber-100 bg-amber-50 p-5 shadow-sm">
-          <h2 className="text-base font-bold text-amber-800">
-            🌙 プラン内容について
-          </h2>
-
-          <p className="mt-2 text-sm leading-7 text-amber-700">
-            プラン内容や上限は、β版での使いやすさを見ながら調整する場合があります。
-            無料でも使いやすく、必要な方にはもっと快適に使っていただける形を目指しています。
+        <section className="recipe-card rounded-3xl border p-5 shadow-sm">
+          <h2 className="font-black">β版のプランについて</h2>
+          <p className="mt-2 text-sm leading-7 opacity-75">
+            β版での利用状況やご意見をもとに、機能と上限を調整する場合があります。
+            Freeでも日々の買い物・レシピ・献立をお使いいただけます。
           </p>
         </section>
 
-        <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+        <div className="grid grid-cols-1 gap-2 pb-6 sm:grid-cols-2">
           <button
             type="button"
             onClick={() => router.push("/profile")}
-            className="rounded-2xl bg-neutral-800 px-4 py-3 text-sm font-bold text-white shadow-sm transition hover:scale-[1.01]"
+            className="recipe-accent-button rounded-2xl px-4 py-3 text-sm font-bold shadow-sm"
           >
             マイページへ戻る
           </button>
-
           <button
             type="button"
             onClick={() => router.push("/")}
-            className="rounded-2xl bg-white px-4 py-3 text-sm font-bold text-neutral-700 shadow-sm ring-1 ring-neutral-200 transition hover:scale-[1.01]"
+            className="recipe-card rounded-2xl border px-4 py-3 text-sm font-bold shadow-sm"
           >
             TOPへ戻る
           </button>
@@ -143,106 +251,156 @@ ctaLabel="月額300円予定"
 }
 
 function PlanCard({
-  emoji,
-  name,
-  label,
-  badge,
-  lead,
-  items,
-  tone,
+  plan,
   currentPlan,
-ctaLabel,
 }: {
-  emoji: string;
-  name: string;
-  label: string;
-  badge: string;
-  lead: string;
-  items: string[];
-  tone: "free" | "special" | "pro";
-  currentPlan: "free" | "special" | "pro";
-ctaLabel: string;
+  plan: DisplayPlan;
+  currentPlan: DisplayPlan;
 }) {
+  const details = PLAN_DETAILS[plan];
+  const isCurrent = plan === currentPlan;
   const styles = {
     free: {
-      card: "border-neutral-200 bg-white",
-      head: "bg-neutral-50 text-neutral-700 ring-neutral-100",
-      badge: "bg-neutral-100 text-neutral-600",
-      item: "bg-white text-neutral-700 ring-neutral-100",
+      card: "border-neutral-200 bg-neutral-50",
+      header: "border-neutral-200 bg-white text-neutral-800",
+      badge: "bg-neutral-200 text-neutral-700",
+      group: "border-neutral-200 bg-white/90",
+      title: "text-neutral-600",
+      value: "text-neutral-800",
+      button: "bg-neutral-200 text-neutral-700",
     },
     special: {
       card: "border-sky-200 bg-sky-50",
-      head: "bg-white text-sky-700 ring-sky-100",
-      badge: "bg-sky-100 text-sky-700",
-      item: "bg-white/80 text-sky-800 ring-sky-100",
+      header: "border-sky-200 bg-white/90 text-sky-900",
+      badge: "bg-sky-200 text-sky-800",
+      group: "border-sky-200 bg-white/80",
+      title: "text-sky-700",
+      value: "text-sky-900",
+      button: "bg-sky-200 text-sky-800",
     },
     pro: {
       card: "border-violet-200 bg-violet-50",
-      head: "bg-white text-violet-700 ring-violet-100",
-      badge: "bg-violet-100 text-violet-700",
-      item: "bg-white/80 text-violet-800 ring-violet-100",
+      header: "border-violet-200 bg-white/90 text-violet-900",
+      badge: "bg-violet-200 text-violet-800",
+      group: "border-violet-200 bg-white/80",
+      title: "text-violet-700",
+      value: "text-violet-900",
+      button: "bg-violet-200 text-violet-800",
     },
-  }[tone];
+  }[plan];
+
+  let buttonLabel = "Freeプラン";
+  if (plan === "pro") {
+    buttonLabel = "Stripe連携準備中";
+  } else if (isCurrent) {
+    buttonLabel = "現在のプラン";
+  } else if (plan === "special" && currentPlan === "free") {
+    buttonLabel = "β協力者特典";
+  } else if (plan === "special") {
+    buttonLabel = "Specialプラン";
+  }
 
   return (
-    <article className={`rounded-3xl border p-5 shadow-sm ${styles.card}`}>
-      <div className={`rounded-2xl p-4 ring-1 ${styles.head}`}>
-        <div className="flex items-start justify-between gap-3">
-          <div>
-            <p className="text-2xl">{emoji}</p>
-
-            <h2 className="mt-1 text-xl font-bold">
-              {name}
-            </h2>
-
-            <p className="mt-1 text-xs font-medium opacity-80">
-              {label}
-            </p>
+    <article
+      className={`min-w-0 rounded-3xl border p-4 shadow-sm sm:p-5 ${styles.card} ${
+        isCurrent ? "ring-2 ring-current ring-offset-2" : ""
+      }`}
+    >
+      <div className={`rounded-2xl border p-4 ${styles.header}`}>
+        <div className="flex min-w-0 items-start justify-between gap-3">
+          <div className="min-w-0">
+            <span className="text-2xl" aria-hidden="true">
+              {details.emoji}
+            </span>
+            <h2 className="mt-1 text-xl font-black">{details.name}</h2>
+            <p className="mt-1 text-xs font-bold opacity-70">{details.label}</p>
           </div>
-
-          <span className={`rounded-full px-3 py-1 text-xs font-bold ${styles.badge}`}>
-            {badge}
-          </span>
+          <div className="flex shrink-0 flex-col items-end gap-2">
+            {isCurrent && (
+              <span className="rounded-full bg-neutral-800 px-2.5 py-1 text-[11px] font-bold text-white">
+                現在のプラン
+              </span>
+            )}
+            <span
+              className={`rounded-full px-2.5 py-1 text-[11px] font-bold ${styles.badge}`}
+            >
+              {details.badge}
+            </span>
+          </div>
         </div>
-
         <p className="mt-3 text-xs leading-6 opacity-80">
-          {lead}
+          {details.description}
         </p>
       </div>
 
-      <div className="mt-4 grid gap-2">
-        {items.map((item) => (
-          <p
-            key={item}
-            className={`rounded-2xl px-3 py-2 text-sm shadow-sm ring-1 ${styles.item}`}
-          >
-            {item}
-          </p>
+      <div className="mt-4 space-y-3">
+        {getFeatureGroups(plan).map((group) => (
+          <FeatureGroup key={group.title} group={group} styles={styles} />
         ))}
+
+        {plan !== "free" && (
+          <div className={`rounded-2xl border p-3 ${styles.group}`}>
+            <h3 className={`text-xs font-black ${styles.title}`}>
+              カスタマイズ
+            </h3>
+            <ul className="mt-2 grid gap-1.5 text-xs">
+              {CUSTOMIZATION_ITEMS.map((item) => (
+                <li key={item} className="flex items-center gap-2">
+                  <span aria-hidden="true">✓</span>
+                  <span>{item}</span>
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+
+        {plan === "pro" && (
+          <div className="rounded-2xl border border-dashed border-violet-300 bg-violet-100/60 p-3">
+            <h3 className="text-xs font-black text-violet-800">
+              今後追加予定
+            </h3>
+            <ul className="mt-2 space-y-1 text-xs text-violet-800">
+              <li>・CSV機能</li>
+              <li>・画像管理</li>
+            </ul>
+          </div>
+        )}
       </div>
 
       <button
-  type="button"
-  disabled={tone === "pro"}
-  className={`mt-4 w-full rounded-2xl px-4 py-3 text-sm font-bold shadow-sm transition ${
-    currentPlan === tone
-      ? "bg-neutral-800 text-white"
-
-      : tone === "pro"
-      ? "bg-violet-500 text-white opacity-60"
-
-      : "bg-white text-neutral-700 ring-1 ring-neutral-200"
-  }`}
->
-  {currentPlan === tone
-    ? "現在のプラン"
-
-    : tone === "pro"
-    ? "Stripe連携準備中"
-
-    : ctaLabel}
-</button>
-
+        type="button"
+        disabled
+        className={`mt-4 w-full cursor-not-allowed rounded-2xl px-4 py-3 text-sm font-black opacity-80 ${styles.button}`}
+      >
+        {buttonLabel}
+      </button>
     </article>
+  );
+}
+
+function FeatureGroup({
+  group,
+  styles,
+}: {
+  group: FeatureGroup;
+  styles: { group: string; title: string; value: string };
+}) {
+  return (
+    <div className={`rounded-2xl border p-3 ${styles.group}`}>
+      <h3 className={`text-xs font-black ${styles.title}`}>{group.title}</h3>
+      <dl className="mt-2 space-y-2">
+        {group.items.map((item) => (
+          <div
+            key={item.label}
+            className="flex min-w-0 items-baseline justify-between gap-3 text-xs"
+          >
+            <dt className="min-w-0 text-neutral-600">{item.label}</dt>
+            <dd className={`shrink-0 font-black ${styles.value}`}>
+              {item.value}
+            </dd>
+          </div>
+        ))}
+      </dl>
+    </div>
   );
 }
