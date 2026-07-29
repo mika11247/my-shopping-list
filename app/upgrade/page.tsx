@@ -166,18 +166,39 @@ export default function UpgradePage() {
       <div className="mx-auto max-w-6xl space-y-5">
         <Header subtitle="Upgrade" title="プランについて ✨" />
 
-        <section className="recipe-card overflow-hidden rounded-3xl border shadow-sm">
-          <div className="p-5 sm:p-7">
-            <p className="text-xs font-bold tracking-[0.2em] opacity-60">
-              M.GLITTER
+        <section className="overflow-hidden rounded-[2rem] border border-sky-100/80 bg-gradient-to-br from-indigo-50 via-white to-lime-50 shadow-sm">
+          <div className="px-6 py-10 sm:px-10 sm:py-14">
+            <p className="text-[11px] font-black tracking-[0.24em] text-indigo-400">
+              MY SHOPPING LIST
             </p>
-            <h1 className="mt-2 text-2xl font-black sm:text-3xl">
-              暮らしに合わせて選べるプラン
+            <h1 className="mt-4 text-3xl font-black leading-[1.45] tracking-tight text-neutral-800 sm:text-4xl">
+              毎日の買い物を、
+              <br />
+              もっと自分らしく。
             </h1>
-            <p className="mt-3 max-w-3xl text-sm leading-7 opacity-75">
-              β版ではFreeプランを基本に、協力してくださる方へSpecial特典をご用意しています。
-              Proプランは、共有や登録数をもっと活用したい方向けに準備中です。
+            <p className="mt-5 text-sm leading-7 text-neutral-600 sm:text-base">
+              あなたの暮らしに合わせて、
+              <br />
+              Free・Special・Proから選べます。
             </p>
+          </div>
+        </section>
+
+        <section className="recipe-card rounded-3xl border p-5 shadow-sm sm:px-6">
+          <div className="flex items-start gap-3">
+            <span
+              className="mt-0.5 rounded-full bg-amber-100 px-2.5 py-1 text-sm"
+              aria-hidden="true"
+            >
+              🌱
+            </span>
+            <div className="min-w-0">
+              <h2 className="font-black">β版のプランについて</h2>
+              <p className="mt-2 text-sm leading-7 opacity-75">
+                β版での利用状況やご意見をもとに、機能と上限を調整する場合があります。
+                Freeでも日々の買い物・レシピ・献立をお使いいただけます。
+              </p>
+            </div>
           </div>
         </section>
 
@@ -221,14 +242,6 @@ export default function UpgradePage() {
           </>
         )}
 
-        <section className="recipe-card rounded-3xl border p-5 shadow-sm">
-          <h2 className="font-black">β版のプランについて</h2>
-          <p className="mt-2 text-sm leading-7 opacity-75">
-            β版での利用状況やご意見をもとに、機能と上限を調整する場合があります。
-            Freeでも日々の買い物・レシピ・献立をお使いいただけます。
-          </p>
-        </section>
-
         <div className="grid grid-cols-1 gap-2 pb-6 sm:grid-cols-2">
           <button
             type="button"
@@ -268,6 +281,8 @@ function PlanCard({
       title: "text-neutral-600",
       value: "text-neutral-800",
       button: "bg-neutral-200 text-neutral-700",
+      currentBadge: "bg-neutral-200 text-neutral-700 ring-neutral-300",
+      currentRing: "ring-neutral-300",
     },
     special: {
       card: "border-sky-200 bg-sky-50",
@@ -277,6 +292,8 @@ function PlanCard({
       title: "text-sky-700",
       value: "text-sky-900",
       button: "bg-sky-200 text-sky-800",
+      currentBadge: "bg-sky-200 text-sky-800 ring-sky-300",
+      currentRing: "ring-sky-300",
     },
     pro: {
       card: "border-violet-200 bg-violet-50",
@@ -286,6 +303,8 @@ function PlanCard({
       title: "text-violet-700",
       value: "text-violet-900",
       button: "bg-violet-200 text-violet-800",
+      currentBadge: "bg-violet-200 text-violet-800 ring-violet-300",
+      currentRing: "ring-violet-300",
     },
   }[plan];
 
@@ -303,7 +322,7 @@ function PlanCard({
   return (
     <article
       className={`min-w-0 rounded-3xl border p-4 shadow-sm sm:p-5 ${styles.card} ${
-        isCurrent ? "ring-2 ring-current ring-offset-2" : ""
+        isCurrent ? `ring-2 ring-offset-2 ${styles.currentRing}` : ""
       }`}
     >
       <div className={`rounded-2xl border p-4 ${styles.header}`}>
@@ -317,8 +336,10 @@ function PlanCard({
           </div>
           <div className="flex shrink-0 flex-col items-end gap-2">
             {isCurrent && (
-              <span className="rounded-full bg-neutral-800 px-2.5 py-1 text-[11px] font-bold text-white">
-                現在のプラン
+              <span
+                className={`rounded-full px-2.5 py-1 text-[11px] font-bold ring-1 ${styles.currentBadge}`}
+              >
+                {details.emoji} 現在のプラン
               </span>
             )}
             <span
