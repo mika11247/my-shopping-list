@@ -6,6 +6,7 @@ import { supabase } from "@/lib/supabase";
 import { useRouter } from "next/navigation";
 import { categories } from "@/lib/categories";
 import { getLimitByPlan } from "@/lib/planLimits";
+import { addOrMergeShoppingItem } from "@/lib/shoppingItems";
 
 
 type ShoppingItem = {
@@ -995,16 +996,6 @@ if (currentListCount >= listLimit) {
     return;
   }
 
-  const alreadyExists = shoppingItems.some(
-    (shoppingItem) =>
-      shoppingItem.name === trimmedName && !shoppingItem.checked
-  );
-
-  if (alreadyExists) {
-    alert("すでにリストにあります");
-    return;
-  }
-
   let categoryToSave = item.category;
 
 // ① user_item_master を先に確認
@@ -1048,36 +1039,27 @@ if (categoryToSave === "一時メモ") {
   }
 }
 
-  const { data, error } = await supabase
-  .from("shopping_items")
-  .insert([
+try {
+  await addOrMergeShoppingItem(
+    supabase,
+    { userId, groupId: groupIdToSave },
     {
-      user_id: userId,
       name: trimmedName,
       category: categoryToSave,
       note: item.note,
-      checked: false,
-      group_id: mode === "group" ? selectedGroupId.trim() : null,
       image_url: item.image_url ?? matchedMaster?.image_url ?? "🛒",
-    },
-  ])
-  .select()
-  .single();
-
-if (error) {
+    }
+  );
+  await fetchItems();
+} catch (error) {
   console.error("追加エラー:", error);
-  alert(`保存に失敗しました: ${error.message}`);
+  alert(
+    `保存に失敗しました: ${
+      error instanceof Error ? error.message : "不明なエラー"
+    }`
+  );
   return;
 }
-
-setShoppingItems((prev) =>
-  [...prev, data].sort((a, b) => {
-    if (a.checked !== b.checked) {
-      return Number(a.checked) - Number(b.checked);
-    }
-    return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
-  })
-);
 
   const existsInDefaultMaster = candidateItems.some(
   (masterItem) => masterItem.name === trimmedName

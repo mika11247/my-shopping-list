@@ -1,7 +1,7 @@
 // lib/categories.ts
 export const categories = [
   {
-    name: "野菜・果物",
+    name: "野菜・果物・海藻",
     emoji: "🥬",
     border: "#84cc16",
     text: "#4d7c0f",
@@ -17,7 +17,7 @@ export const categories = [
   },
 
   {
-    name: "魚",
+    name: "魚介類",
     emoji: "🐟",
     border: "#06b6d4",
     text: "#155e75",
