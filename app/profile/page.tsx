@@ -599,52 +599,52 @@ style={{
   </p>
 
   <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
-    <div className="rounded-2xl bg-lime-50 p-3 text-center ring-1 ring-lime-100">
-      <p className="text-xs text-gray-500">買い物リスト</p>
-      <p className="mt-1 text-xl font-bold text-lime-700">
+    <div className="usage-card usage-card--shopping rounded-2xl p-3 text-center">
+      <p className="text-xs text-gray-500">🛒 買い物リスト</p>
+      <p className="usage-card__value mt-1 text-xl font-bold">
         {shoppingCount}件
       </p>
     </div>
 
-    <div className="rounded-2xl bg-pink-50 p-3 text-center ring-1 ring-pink-100">
-      <p className="text-xs text-gray-500">マイアイテム</p>
-      <p className="mt-1 text-lg font-bold text-pink-600">
+    <div className="usage-card usage-card--master rounded-2xl p-3 text-center">
+      <p className="text-xs text-gray-500">❤️ マイアイテム</p>
+      <p className="usage-card__value mt-1 text-lg font-bold">
         {masterCount} / {getLimitByPlan(userRole, userPlan, "master")}件
       </p>
     </div>
 
-    <div className="rounded-2xl p-3 text-center ring-1" style={{ backgroundColor: "var(--sub-bg)", borderColor: "var(--ring-color)" }}>
-      <p className="text-xs text-gray-500">共有リスト</p>
-      <p className="mt-1 text-lg font-bold" style={{ color: "var(--main-text)" }}>
+    <div className="usage-card usage-card--sharing rounded-2xl p-3 text-center">
+      <p className="text-xs text-gray-500">👥 共有リスト</p>
+      <p className="usage-card__value mt-1 text-lg font-bold">
         {groupCount} / {getLimitByPlan(userRole, userPlan, "group")}件
       </p>
     </div>
 
-    <div className="rounded-2xl p-3 text-center ring-1" style={{ backgroundColor: "var(--sub-bg)", borderColor: "var(--ring-color)" }}>
-      <p className="text-xs text-gray-500">共有メンバー</p>
-      <p className="mt-1 text-lg font-bold" style={{ color: "var(--main-text)" }}>
+    <div className="usage-card usage-card--sharing rounded-2xl p-3 text-center">
+      <p className="text-xs text-gray-500">👤 共有メンバー</p>
+      <p className="usage-card__value mt-1 text-lg font-bold">
         {memberCount}人
       </p>
       <p className="mt-1 text-[10px] text-gray-500">1リスト {getLimitByPlan(userRole, userPlan, "member")}人まで</p>
     </div>
 
-    <div className="rounded-2xl p-3 text-center ring-1" style={{ backgroundColor: "var(--sub-bg)", borderColor: "var(--ring-color)" }}>
-      <p className="text-xs text-gray-500">レシピノート</p>
-      <p className="mt-1 text-lg font-bold" style={{ color: "var(--main-text)" }}>
+    <div className="usage-card usage-card--recipe rounded-2xl p-3 text-center">
+      <p className="text-xs text-gray-500">📖 レシピノート</p>
+      <p className="usage-card__value mt-1 text-lg font-bold">
         {recipeCount} / {getLimitByPlan(userRole, userPlan, "recipe")}件
       </p>
     </div>
 
-    <div className="rounded-2xl p-3 text-center ring-1" style={{ backgroundColor: "var(--sub-bg)", borderColor: "var(--ring-color)" }}>
-      <p className="text-xs text-gray-500">献立リスト</p>
-      <p className="mt-1 text-lg font-bold" style={{ color: "var(--main-text)" }}>
+    <div className="usage-card usage-card--meal-plan rounded-2xl p-3 text-center">
+      <p className="text-xs text-gray-500">🍽 献立リスト</p>
+      <p className="usage-card__value mt-1 text-lg font-bold">
         {mealPlanCount} / {getLimitByPlan(userRole, userPlan, "mealPlan")}件
       </p>
     </div>
 
-    <div className="rounded-2xl bg-sky-50 p-3 text-center ring-1 ring-sky-100">
-      <p className="text-xs text-gray-500">購入履歴</p>
-      <p className="mt-1 text-xl font-bold text-sky-600">
+    <div className="usage-card usage-card--history rounded-2xl p-3 text-center">
+      <p className="text-xs text-gray-500">📜 購入履歴</p>
+      <p className="usage-card__value mt-1 text-xl font-bold">
         {historyCount}件
       </p>
     </div>

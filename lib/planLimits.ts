@@ -45,12 +45,12 @@ export const getLimitByPlan = (
       return 50;
 
     case "recipe":
-      if (plan === "pro") return 100;
-      if (plan === "special") return 30;
-      return 10;
+      if (plan === "pro") return 500;
+      if (plan === "special") return 50;
+      return 20;
 
     case "mealPlan":
-      if (plan === "pro") return 30;
+      if (plan === "pro") return 100;
       if (plan === "special") return 10;
       return 3;
 

@@ -183,3 +183,49 @@ body {
   outline: 2px solid var(--ring-color);
   outline-offset: 1px;
 }
+
+/* Profile usage dashboard: fixed category colors, independent from app themes. */
+.usage-card {
+  background-color: var(--usage-bg);
+  border: 1px solid var(--usage-border);
+}
+
+.usage-card__value {
+  color: var(--usage-value);
+}
+
+.usage-card--shopping {
+  --usage-bg: #eef9e8;
+  --usage-border: #cfe8c2;
+  --usage-value: #527c3f;
+}
+
+.usage-card--master {
+  --usage-bg: #f4effc;
+  --usage-border: #ded1f2;
+  --usage-value: #72549a;
+}
+
+.usage-card--sharing {
+  --usage-bg: #fff0f5;
+  --usage-border: #f3cfdd;
+  --usage-value: #a65c78;
+}
+
+.usage-card--recipe {
+  --usage-bg: #fff8dc;
+  --usage-border: #efe0a7;
+  --usage-value: #897323;
+}
+
+.usage-card--meal-plan {
+  --usage-bg: #fff0e3;
+  --usage-border: #f1d0b5;
+  --usage-value: #a46432;
+}
+
+.usage-card--history {
+  --usage-bg: #edf6ff;
+  --usage-border: #c9e1f5;
+  --usage-value: #44769d;
+}
