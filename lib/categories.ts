@@ -65,12 +65,12 @@ export const categories = [
   },
 
   {
-    name: "インスタント・加工食品",
-    emoji: "🍜",
-    border: "#fb7185",
-    text: "#9f1239",
-    bg: "#fff1f2",
-  },
+  name: "加工食品・缶詰",
+  emoji: "🥫",
+  border: "#fb7185",
+  text: "#9f1239",
+  bg: "#fff1f2",
+},
 
   {
     name: "飲み物",
