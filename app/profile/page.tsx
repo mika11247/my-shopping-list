@@ -1,5 +1,6 @@
 "use client";
 
+import { saveMyProfile } from "@/lib/shopping-security";
 import Header from "@/components/Header";
 import { useEffect, useState } from "react";
 import { supabase } from "../../lib/supabase";
@@ -201,13 +202,7 @@ export default function ProfilePage() {
       }
        
       if (user) {
-        await supabase.from("profiles").upsert({
-          user_id: user.id,
-          display_name:
-            user.user_metadata?.display_name ??
-            user.email?.split("@")[0],
-          email: user.email,
-        });
+        await saveMyProfile(supabase, user.user_metadata?.display_name ?? user.email?.split("@")[0] ?? "ユーザー");
       }
 
       const { data: profile, error: profileError } = await supabase
@@ -240,20 +235,23 @@ if (profileError) {
       },
     });
 
+    if (error) {
+      setMessage("表示名の更新に失敗しました");
+      return;
+    }
+
     const {
       data: { user },
     } = await supabase.auth.getUser();
     
-    if (user) {
-      await supabase.from("profiles").upsert({
-        user_id: user.id,
-        display_name: trimmedName,
-        email: user.email,
-      });
+    if (!user) {
+      setMessage("ログインし直してください。");
+      return;
     }
-
-    if (error) {
-      setMessage("表示名の更新に失敗しました");
+    try {
+      await saveMyProfile(supabase, trimmedName);
+    } catch {
+      setMessage("認証側の表示名は更新されましたが、プロフィールへの反映に失敗しました。再度保存してください。");
       return;
     }
 
@@ -308,42 +306,13 @@ if (profileError) {
     router.push("/login");
   };
 
-  const handleWithdraw = async () => {
-  const ok = window.confirm(
-    "本当に退会しますか？\nアカウントと登録データは削除されます。"
-  );
-
-  if (!ok) return;
-
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  if (!user) {
-    setMessage("ログイン情報を取得できませんでした");
-    return;
-  }
-
-  const response = await fetch("/api/delete-user", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({ userId: user.id }),
-  });
-
-  if (!response.ok) {
-    setMessage("退会処理に失敗しました");
-    return;
-  }
-
-  await supabase.auth.signOut();
-
-router.push("/login?withdraw=1");
-};
+  const handleWithdraw = () => {setMessage("退会機能は安全性確認のため停止中です。お問い合わせください。");};
 
   useEffect(() => {
-    fetchProfile();
+    fetchProfile().catch(() => {
+      setMessage("プロフィールを取得できませんでした。再読み込みしてください。");
+      setLoading(false);
+    });
   }, []);
 
  useEffect(() => {
@@ -722,9 +691,11 @@ style={{
 
 <button
   onClick={handleWithdraw}
+  disabled
+  title="安全性確認のため退会機能を停止しています"
   className="w-full rounded-full bg-white px-4 py-3 text-sm font-bold text-red-500 shadow ring-1 ring-red-100"
 >
-  退会する
+  退会機能は停止中
 </button>
 
         </div>

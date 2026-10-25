@@ -1,21 +1,8 @@
-import { createClient } from "@supabase/supabase-js";
-
-export async function POST(req: Request) {
-  const body = await req.json();
-  const userId = body.userId;
-
-  const supabaseAdmin = createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!
-  );
-
-  // データ削除
-  await supabaseAdmin.from("shopping_items").delete().eq("user_id", userId);
-  await supabaseAdmin.from("user_item_master").delete().eq("user_id", userId);
-  await supabaseAdmin.from("deleted_items").delete().eq("user_id", userId);
-
-  // ユーザー削除
-  await supabaseAdmin.auth.admin.deleteUser(userId);
-
-  return new Response(JSON.stringify({ success: true }), { status: 200 });
+// Firewall denial remains required. Defense in depth if a different hostname
+// or deployment reaches the application: do not instantiate any DB client.
+export async function POST() {
+  return Response.json({ success: false, error: "退会機能は安全性確認のため停止中です。お問い合わせください。" }, {
+    status: 503,
+    headers: { "Cache-Control": "no-store", "Retry-After": "86400" },
+  });
 }

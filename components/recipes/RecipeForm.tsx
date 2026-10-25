@@ -5,6 +5,7 @@ import { RECIPE_CATEGORIES } from "@/lib/recipeMetadata";
 import { getLimitByPlan } from "@/lib/planLimits";
 import { getRecipeItemMaster, isHttpUrl, type ItemMaster, type Recipe, type RecipeItemType } from "@/lib/recipes";
 import { supabase } from "@/lib/supabase";
+import { removeStoredImage } from "@/lib/shopping-security";
 import { useAppTheme } from "@/lib/useAppTheme";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
@@ -165,6 +166,7 @@ export default function RecipeForm({ recipeId }: { recipeId?: string }) {
     let nextPath = removeImage ? null : imagePath;
     let nextUrl = removeImage ? null : imageUrl;
     let uploadedPath: string | null = null;
+    let recipeSaved = false;
 
     try {
       if (imageFile) {
@@ -192,8 +194,9 @@ export default function RecipeForm({ recipeId }: { recipeId?: string }) {
       };
       let savedId = recipeId;
       if (recipeId) {
-        const { error: updateError } = await supabase.from("recipes").update(payload).eq("id", recipeId);
-        if (updateError) throw updateError;
+        const { data: updated, error: updateError } = await supabase.from("recipes").update(payload).eq("id", recipeId).select("id");
+        if (updateError || updated?.length !== 1) throw new Error("レシピを更新できませんでした。");
+        recipeSaved = true;
         const { error: deleteItemsError } = await supabase
           .from("recipe_items")
           .delete()
@@ -207,6 +210,7 @@ export default function RecipeForm({ recipeId }: { recipeId?: string }) {
           .single();
         if (insertError) throw insertError;
         savedId = data.id;
+        recipeSaved = true;
       }
       if (items.length && savedId) {
         const { error: itemError } = await supabase.from("recipe_items").insert(
@@ -222,13 +226,19 @@ export default function RecipeForm({ recipeId }: { recipeId?: string }) {
         if (itemError) throw itemError;
       }
 
-      if ((removeImage || imageFile) && imagePath && imagePath !== nextPath) {
-        const { error: removeError } = await supabase.storage.from("recipe-images").remove([imagePath]);
-        if (removeError) console.warn("古いレシピ画像を削除できませんでした", removeError);
+      if ((removeImage || imageFile) && imageUrl && imageUrl !== nextUrl) {
+        const { imageRetained } = await removeStoredImage(supabase, "recipe-images", imageUrl);
+        if (imageRetained) alert("レシピは保存しました。旧画像は参照、旧形式、または削除失敗により保持されています。");
       }
       router.push(`/recipes/${savedId}`);
     } catch (cause) {
-      if (uploadedPath) await supabase.storage.from("recipe-images").remove([uploadedPath]);
+      // If the recipe row already points at the upload, keep it even when
+      // a later detail write fails. Keep the old image on every failure path.
+      if (uploadedPath && !recipeSaved) {
+        const uploadedUrl = supabase.storage.from("recipe-images").getPublicUrl(uploadedPath).data.publicUrl;
+        const { imageRetained } = await removeStoredImage(supabase, "recipe-images", uploadedUrl);
+        if (imageRetained) alert("保存に失敗しました。アップロード画像は安全のため保持されています。");
+      }
       setError(cause instanceof Error ? cause.message : "保存に失敗しました。");
     } finally {
       setSaving(false);

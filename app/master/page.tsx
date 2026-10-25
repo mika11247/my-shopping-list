@@ -1,6 +1,7 @@
 "use client";
 
 import Header from "@/components/Header";
+import { deleteOwnedMasterItem, removeStoredImage } from "@/lib/shopping-security";
 import { useEffect, useState } from "react";
 import { supabase } from "../../lib/supabase";
 import { categories } from "@/lib/categories";
@@ -231,13 +232,6 @@ setNewCategory("その他");
 
   const currentItem = items.find((item) => item.id === id);
 
-if (
-  currentItem?.image_url?.startsWith("http") &&
-  currentItem.image_url !== image_url
-) {
-  await deleteStorageImage(currentItem.image_url);
-}
-
   const { data, error } = await supabase
     .from("user_item_master")
     .update({
@@ -253,10 +247,16 @@ if (
   console.log("更新結果:", data);
   console.log("更新エラー:", error);
 
-  if (error) {
+  if (error || !data?.length) {
     console.error("更新エラー:", error);
     alert("更新に失敗しました");
     return;
+  }
+
+  // Keep the previous image until the row update actually succeeds. Storage
+  // RLS retains it if another shopping item or master still references it.
+  if (currentItem?.image_url?.startsWith("http") && currentItem.image_url !== image_url) {
+    await deleteStorageImage(currentItem.image_url);
   }
 
   setItems((prev) =>
@@ -277,21 +277,12 @@ if (
 };
 
 const deleteMasterItem = async (id: number) => {
-  const targetItem = items.find((item) => item.id === id);
-
-  if (targetItem?.image_url?.startsWith("http")) {
-    await deleteStorageImage(targetItem.image_url);
-  }
-
-  const { error } = await supabase
-    .from("user_item_master")
-    .delete()
-    .eq("id", id);
-
-  if (error) {
-    console.error("削除エラー:", error);
-  } else {
+  try {
+    const { imageRetained } = await deleteOwnedMasterItem(supabase, id);
     setItems((prev) => prev.filter((item) => item.id !== id));
+    if (imageRetained) alert("商品は削除しました。画像は共有データからの参照または削除失敗により保持されています。");
+  } catch (error) {
+    alert(error instanceof Error ? error.message : "商品を削除できませんでした。");
   }
 };
 
@@ -408,28 +399,9 @@ const compressImage = async (file: File) => {
     return data.publicUrl;
   };
 
-  const extractStoragePath = (url: string) => {
-    const marker = "/storage/v1/object/public/item-images/";
-  
-    const index = url.indexOf(marker);
-  
-    if (index === -1) return null;
-  
-    return url.substring(index + marker.length);
-  };
-
   const deleteStorageImage = async (url: string) => {
-    const path = extractStoragePath(url);
-  
-    if (!path) return;
-  
-    const { error } = await supabase.storage
-      .from("item-images")
-      .remove([path]);
-  
-    if (error) {
-      console.error("画像削除エラー:", error);
-    }
+    const { imageRetained } = await removeStoredImage(supabase, "item-images", url);
+    if (imageRetained) alert("画像は他のデータからの参照、旧形式、または削除失敗により保持されています。");
   };
 
   return (
@@ -564,9 +536,7 @@ onBlur={(e) => {
       const url = await uploadImage(file);
 
       if (url) {
-        if (newImageUrl.startsWith("http")) {
-          await deleteStorageImage(newImageUrl);
-        }
+        // Keep previous images until the product is successfully saved.
         setNewImageUrl(url);
       }
     }}
@@ -802,9 +772,7 @@ onBlur={(e) => {
       const url = await uploadImage(file);
 
       if (url) {
-        if (editImageUrl.startsWith("http")) {
-          await deleteStorageImage(editImageUrl);
-        }
+        // Never delete the saved image while the edit can still be cancelled.
         setEditImageUrl(url);
       }
     }}

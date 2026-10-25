@@ -4,6 +4,7 @@ import Header from "@/components/Header";
 import { getRecipeItemMaster, type Recipe, type RecipeItem, type RecipeItemType } from "@/lib/recipes";
 import { addOrMergeShoppingItem } from "@/lib/shoppingItems";
 import { supabase } from "@/lib/supabase";
+import { removeStoredImage } from "@/lib/shopping-security";
 import { useAppTheme } from "@/lib/useAppTheme";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -107,15 +108,17 @@ export default function RecipeDetail({ recipeId }: { recipeId: string }) {
   const removeRecipe = async () => {
     if (!recipe || !confirm(`「${recipe.name}」を削除しますか？`)) return;
     setBusy(true);
-    const { error: deleteError } = await supabase.from("recipes").delete().eq("id", recipe.id);
-    if (deleteError) {
-      setError(deleteError.message);
+    const { data: deleted, error: deleteError } = await supabase.from("recipes").delete().eq("id", recipe.id).select("id");
+    if (deleteError || deleted?.length !== 1) {
+      setError("レシピを削除できませんでした。");
       setBusy(false);
       return;
     }
-    if (recipe.image_path) {
-      const { error: imageError } = await supabase.storage.from("recipe-images").remove([recipe.image_path]);
-      if (imageError) console.warn("レシピ画像を削除できませんでした", imageError);
+    if (recipe.image_url) {
+      const { imageRetained } = await removeStoredImage(supabase, "recipe-images", recipe.image_url);
+      if (imageRetained) alert("レシピは削除しました。画像は参照、旧形式、または削除失敗により保持されています。");
+    } else if (recipe.image_path) {
+      alert("レシピは削除しました。旧形式の画像は安全のため保持されています。");
     }
     router.push("/recipes");
   };

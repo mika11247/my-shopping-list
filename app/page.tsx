@@ -1,4 +1,5 @@
 "use client";
+import { saveMyProfile, notifyShoppingInvitation } from "@/lib/shopping-security";
 
 import Header from "@/components/Header";
 import { useEffect, useMemo, useState } from "react";
@@ -40,10 +41,12 @@ type GroupMember = {
 };
 
 type Invitation = {
-  id: number;
+  id: string;
   email: string;
   status: string;
   created_at: string;
+  expires_at: string;
+  expired: boolean;
 };
 
 const toHiragana = (text: string) => {
@@ -110,58 +113,32 @@ const dangerBtn =
 const currentMember = groupMembers.find((member) => member.user_id === userId);
 const isCurrentUserOwner = currentMember?.role === "owner";
 
-const checkInvitations = async (userId: string, email: string) => {
-  const normalizedEmail = email.trim().toLowerCase();
-
-  const { data: invites, error: inviteError } = await supabase
-    .from("invitations")
-    .select("*")
-    .eq("email", normalizedEmail)
-    .eq("status", "pending");
-
-  if (inviteError) {
-    console.error("招待チェックエラー:", inviteError);
-    return;
-  }
-
-  for (const invite of invites || []) {
-    const { error: memberError } = await supabase
-      .from("group_members")
-      .insert([
-        {
-          group_id: invite.group_id,
-          user_id: userId,
-          role: "member",
-        },
-      ]);
-
-    if (memberError && memberError.code !== "23505") {
-      console.error("招待からメンバー追加エラー:", memberError);
-      continue;
-    }
-
-    await supabase
-      .from("invitations")
-      .update({ status: "accepted" })
-      .eq("id", invite.id);
-  }
+const checkInvitations = async (_userId: string, email: string) => {
+ const { data, error } = await supabase.from("invitations").select("id,email,status,expires_at").eq("email",email.trim().toLowerCase()).eq("status","pending");
+ if(error) return;
+ for(const invite of data ?? []) {
+  if(Date.parse(invite.expires_at)<=Date.now()) continue;
+  if(!window.confirm("共有リストへの招待があります。参加しますか？")) continue;
+  const {error: acceptError}=await supabase.rpc("accept_shopping_invitation",{p_invite_id:invite.id});
+  if(acceptError) alert("招待を受諾できませんでした。期限や招待先を確認してください。");
+ }
 };
 
-const cancelInvitation = async (inviteId: number) => {
-  const ok = confirm("この招待をキャンセルしますか？");
-  if (!ok) return;
+const cancelInvitation = async (inviteId: string) => {
+ if(!confirm("この招待をキャンセルしますか？")) return;
+ const {error}=await supabase.rpc("cancel_shopping_invitation",{p_invite_id:inviteId});
+ if(error){alert("招待をキャンセルできませんでした。");return;}
+ await fetchPendingInvitations();
+};
 
-  const { error } = await supabase
-    .from("invitations")
-    .delete()
-    .eq("id", inviteId);
-
-  if (error) {
-    console.error("招待キャンセルエラー:", error);
-    alert("招待のキャンセルに失敗しました");
-    return;
-  }
-
+const reissueInvitation = async (email: string) => {
+  if (!selectedGroupId || !confirm("この宛先へ招待を再発行しますか？以前の招待は使えなくなります。")) return;
+  const { data, error } = await supabase.rpc("issue_shopping_invitation", { p_group_id: selectedGroupId, p_email: email });
+  if (error || !data?.[0]) { setInviteMessage("招待を再発行できませんでした。"); return; }
+  try {
+    await notifyShoppingInvitation(supabase, data[0].id);
+    setInviteMessage("招待を再発行し、メールを送信しました。");
+  } catch { setInviteMessage("招待を再発行しました。メールを送信できなかったため、新しい招待リンクをコピーして共有してください。"); }
   await fetchPendingInvitations();
 };
 
@@ -284,29 +261,9 @@ useEffect(() => {
 }, []);
 
 const fetchGroupOwnerPlan = async () => {
-  if (!selectedGroupId) return;
-
-  // owner取得
-  const { data: ownerMember } = await supabase
-    .from("group_members")
-    .select("user_id")
-    .eq("group_id", selectedGroupId)
-    .eq("role", "owner")
-    .single();
-
-  if (!ownerMember) return;
-
-  // ownerのplan取得
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("plan, role")
-    .eq("user_id", ownerMember.user_id)
-    .single();
-
-  if (profile) {
-    setGroupOwnerPlan(profile.plan ?? "free");
-    setGroupOwnerRole(profile.role ?? "user");
-  }
+ if(!selectedGroupId) return;
+ const {data,error}=await supabase.rpc("shopping_group_entitlement",{p_group_id:selectedGroupId});
+ if(!error && data?.[0]){setGroupOwnerPlan(data[0].plan ?? "free");setGroupOwnerRole(data[0].role ?? "user");}
 };
 
 useEffect(() => {
@@ -339,11 +296,7 @@ useEffect(() => {
     setUserEmail(email);
 
     if (email) {
-      await supabase.from("profiles").upsert({
-        user_id: user.id,
-        email: email.toLowerCase(),
-        display_name: name,
-      });
+      await saveMyProfile(supabase, name);
 
       await checkInvitations(user.id, email);
     }
@@ -361,7 +314,7 @@ useEffect(() => {
     }
   };
 
-  checkUser();
+  checkUser().catch(() => alert("ログイン情報またはプロフィールを確認できませんでした。再読み込みしてください。"));
 }, [router]);
 
 const currentRole = mode === "group" ? groupOwnerRole : userRole;
@@ -629,43 +582,9 @@ const createSharedGroup = async () => {
     return;
   }
 
-  const groupInsertPayload = {
-    name: newGroupName,
-    owner_user_id: user.id,
-    is_personal: false,
-  };
-
-  console.log("createSharedGroup user:", user);
-  console.log("createSharedGroup user.id:", user.id);
-  console.log("createSharedGroup groups insert payload:", groupInsertPayload);
-
-  const { data: createdGroup, error: createGroupError } = await supabase
-    .from("groups")
-    .insert([groupInsertPayload])
-    .select("id, name")
-    .single();
-
-  if (createGroupError || !createdGroup) {
-    console.error("共有グループ作成エラー:", createGroupError);
-    alert(`共有リストの作成に失敗しました: ${createGroupError?.message ?? "unknown error"}`);
-    return;
-  }
-
-  const { error: memberInsertError } = await supabase
-    .from("group_members")
-    .insert([
-      {
-        group_id: createdGroup.id,
-        user_id: userId,
-        role: "owner",
-      },
-    ]);
-
-  if (memberInsertError) {
-    console.error("group_members登録エラー:", memberInsertError);
-    alert(`メンバー登録に失敗しました: ${memberInsertError.message}`);
-    return;
-  }
+  const {data,error}=await supabase.rpc("create_shopping_group",{p_name:trimmedGroupName});
+ const createdGroup=data?.[0];
+ if(error || !createdGroup){alert("共有リストを作成できませんでした。");return;}
 
   await fetchOwnedGroups();
   setSelectedGroupId(createdGroup.id);
@@ -704,50 +623,18 @@ const updateSharedGroupName = async () => {
 };
 
 const fetchGroupMembers = async () => {
-  if (!selectedGroupId) return;
-
-  const { data: membersData, error: membersError } = await supabase
-    .from("group_members")
-    .select("user_id, role")
-    .eq("group_id", selectedGroupId)
-    .order("created_at", { ascending: true });
-
-  if (membersError) {
-    console.error("グループメンバー取得エラー:", membersError);
-    return;
-  }
-
-  const userIds = (membersData || []).map((m) => m.user_id);
-
-  const { data: profilesData } = await supabase
-    .from("profiles")
-    .select("user_id, display_name, email")
-    .in("user_id", userIds);
-
-  const formatted = (membersData || []).map((m: any) => {
-    const profile = profilesData?.find((p) => p.user_id === m.user_id);
-
-    const name =
-      profile?.display_name ??
-      profile?.email?.split("@")[0] ??
-      `${m.user_id.slice(0, 8)}...`;
-
-    return {
-      user_id: m.user_id,
-      role: m.role,
-      display_name: name,
-    };
-  });
-
-  setGroupMembers(formatted);
+ if(!selectedGroupId)return;
+ const {data,error}=await supabase.rpc("shopping_group_directory",{p_group_id:selectedGroupId});
+ if(error){setGroupMembers([]);return;}
+ setGroupMembers(data ?? []);
 };
 
-const fetchPendingInvitations = async () => {
+async function fetchPendingInvitations() {
   if (!selectedGroupId) return;
 
   const { data, error } = await supabase
     .from("invitations")
-    .select("id, email, status, created_at")
+    .select("id, email, status, created_at, expires_at")
     .eq("group_id", selectedGroupId)
     .eq("status", "pending")
     .order("created_at", { ascending: false });
@@ -757,7 +644,7 @@ const fetchPendingInvitations = async () => {
     return;
   }
 
-  setPendingInvitations(data || []);
+  setPendingInvitations((data || []).map((invite) => ({ ...invite, expired: Date.parse(invite.expires_at) <= Date.now() })));
 };
 
 const addGroupMember = async () => {
@@ -783,85 +670,14 @@ return;
     return;
   }
 
-  const { data: profile, error: profileError } = await supabase
-    .from("profiles")
-    .select("user_id, display_name, email")
-    .ilike("email", email)
-    .maybeSingle();
-
-  if (profileError) {
-    console.error("プロフィール検索エラー:", profileError);
-    setInviteMessage("検索中にエラーが発生しました");
-    return;
-  }
-
-  if (profile) {
-    const { error } = await supabase.from("group_members").insert([
-      {
-        group_id: selectedGroupId,
-        user_id: profile.user_id,
-        role: "member",
-      },
-    ]);
-
-    if (error) {
-      console.error("メンバー追加エラー:", error);
-
-      if (error.code === "23505") {
-        setInviteMessage("このユーザーはすでにメンバーです");
-      } else {
-        setInviteMessage(`メンバー追加に失敗しました: ${error.message}`);
-      }
-
-      return;
-    }
-
-    setInviteMessage(
-      `${profile.display_name ?? profile.email?.split("@")[0] ?? "メンバー"}さんを追加しました`
-    );
-
-    await fetchGroupMembers();
-  } else {
-    
-    const { data: invite, error } = await supabase
-    .from("invitations")
-    .insert([
-      {
-        email,
-        group_id: selectedGroupId,
-        invited_by: userId,
-        status: "pending",
-      },
-    ])
-    .select()
-    .single();
-  
-  if (error) {
-    console.error("招待エラー:", error);
-    setInviteMessage(`招待に失敗しました: ${error.message}`);
-    return;
-  }
-
-  if (!invite?.id) {
-    console.error("inviteが不正");
-    return;
-  }
-  
-  await supabase.functions.invoke("send-invite-email", {
-    body: {
-      email,
-      inviteId: invite.id,
-    },
-  });
-  
-  setInviteMessage(
-    "招待しました！相手に招待メールを送信しました"
-  );
-  
-  await fetchPendingInvitations();
-  }
-
-  setInviteEmail("");
+  const {data,error}=await supabase.rpc("issue_shopping_invitation",{p_group_id:selectedGroupId,p_email:email});
+ const invite=data?.[0];
+ if(error || !invite){setInviteMessage("招待を登録できませんでした。");return;}
+ try {
+  await notifyShoppingInvitation(supabase,invite.id);
+  setInviteMessage("招待メールを送信しました。相手の参加確認後に共有されます。");
+ }catch(error){setInviteMessage(error instanceof Error ? error.message : "メール送信に失敗しました。");}
+ await fetchPendingInvitations();setInviteEmail("");
 };
 
 const removeGroupMember = async (targetUserId: string, role: string) => {
@@ -878,14 +694,9 @@ const removeGroupMember = async (targetUserId: string, role: string) => {
   const ok = window.confirm("このメンバーを共有リストから削除しますか？");
   if (!ok) return;
 
-  const { data, error } = await supabase
-  .from("group_members")
-  .delete()
-  .eq("group_id", selectedGroupId)
-  .eq("user_id", targetUserId)
-  .select();
+  const { error } = await supabase.rpc("remove_shopping_member", { p_group_id: selectedGroupId, p_user_id: targetUserId });
 
-console.log("削除されたメンバー:", data);
+
 
   if (error) {
     console.error("メンバー削除エラー:", error);
@@ -893,10 +704,7 @@ console.log("削除されたメンバー:", data);
     return;
   }
 
-  if (!data || data.length === 0) {
-    alert("削除対象が見つからないか、削除権限がありません");
-    return;
-  }
+
 
   await fetchGroupMembers();
 };
@@ -908,14 +716,11 @@ const deleteSharedGroup = async () => {
   }
 
   const ok = window.confirm(
-    "この共有リストを削除しますか？共有リストのメンバー情報も削除されます。"
+    "空の共有リストを削除しますか？ほかのメンバーや買い物・履歴・献立が残っている場合は削除できません。"
   );
   if (!ok) return;
 
-  const { error } = await supabase
-    .from("groups")
-    .delete()
-    .eq("id", selectedGroupId);
+  const { error } = await supabase.rpc("delete_empty_shopping_group", { p_group_id: selectedGroupId });
 
   if (error) {
     console.error("共有リスト削除エラー:", error);
@@ -1450,6 +1255,7 @@ await supabase
             </button>
           </div>
 
+          {inviteMessage && <p role="status" className="mt-3 text-sm text-neutral-700">{inviteMessage}</p>}
           <div className="mt-3 rounded-xl bg-blue-50 p-3 text-xs text-blue-700">
             <p className="font-semibold">
               招待について
@@ -1547,7 +1353,7 @@ await supabase
 
                 <div className="mt-1 flex flex-wrap gap-2">
                   <span className="rounded-full bg-yellow-100 px-3 py-1 text-xs text-yellow-700">
-                    未参加
+                    {invite.expired ? "期限切れ・再招待が必要" : "未参加"}
                   </span>
 
                   <button
@@ -1565,6 +1371,9 @@ await supabase
                     コピー
                   </button>
 
+                  {isCurrentUserOwner && (
+                    <button onClick={() => void reissueInvitation(invite.email)} className="rounded-full bg-blue-100 px-3 py-1 text-xs font-semibold text-blue-600">再招待</button>
+                  )}
                   {isCurrentUserOwner && (
                     <button
                       onClick={() =>
