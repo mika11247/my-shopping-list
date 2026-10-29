@@ -1,0 +1,7 @@
+{
+  "git": {
+    "deploymentEnabled": {
+      "feature/my-items-limit-form": false
+    }
+  }
+}
