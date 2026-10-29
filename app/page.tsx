@@ -2,7 +2,9 @@
 import { saveMyProfile, notifyShoppingInvitation } from "@/lib/shopping-security";
 
 import Header from "@/components/Header";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import MyItemForm from "@/components/my-items/MyItemForm";
+import { createMyItem, type MyItemDraft } from "@/lib/myItems";
 import { supabase } from "@/lib/supabase";
 import { useRouter } from "next/navigation";
 import { categories } from "@/lib/categories";
@@ -62,6 +64,8 @@ export default function Home() {
   const [shoppingItems, setShoppingItems] = useState<ShoppingItem[]>([]);
   const [candidateItems, setCandidateItems] = useState<CandidateItem[]>([]);
   const [search, setSearch] = useState("");
+  const [masterDraft, setMasterDraft] = useState<MyItemDraft | null>(null);
+  const addingItem = useRef(false);
   const [selectedCategory, setSelectedCategory] = useState("その他");
   const [mode, setMode] = useState<
   "personal" | "group" | "all"
@@ -469,7 +473,7 @@ const fetchUserMasterItems = async () => {
 
   const { data, error } = await supabase
   .from("user_item_master")
-  .select("name, category, image_url")
+  .select("name, yomi, category, image_url")
   .eq("user_id", userId);
 
   if (error) {
@@ -479,7 +483,7 @@ const fetchUserMasterItems = async () => {
 
   const formatted: CandidateItem[] = (data || []).map((item) => ({
     name: item.name,
-    yomi: item.name,
+    yomi: item.yomi ?? item.name,
     category: item.category ?? "その他",
     note: "",
     image_url: item.image_url ?? "🛒",
@@ -775,10 +779,13 @@ const groupedItems = useMemo(() => {
   isManual?: boolean;
   image_url?: string;
 }) => {
+  if (addingItem.current) return false;
+  addingItem.current = true;
+  try {
   
   if (!userId) {
     alert("ログイン情報を取得できませんでした");
-    return;
+    return false;
   }
 
 
@@ -787,7 +794,7 @@ const currentListCount = shoppingItems.length;
 
 if (currentListCount >= listLimit) {
   alert(`このリストは${listLimit}件まで登録できます`);
-  return;
+  return false;
 }
 
   const trimmedName = item.name.trim();
@@ -798,7 +805,7 @@ if (currentListCount >= listLimit) {
 
   if (mode === "group" && !groupIdToSave) {
     alert("共有リストのgroup_idを入力してください");
-    return;
+    return false;
   }
 
   let categoryToSave = item.category;
@@ -840,7 +847,7 @@ if (categoryToSave === "一時メモ") {
 
   if (memoCount >= memoLimit) {
     alert(`一時メモは${memoLimit}件まで登録できます`);
-    return;
+    return false;
   }
 }
 
@@ -863,7 +870,7 @@ try {
       error instanceof Error ? error.message : "不明なエラー"
     }`
   );
-  return;
+  return false;
 }
 
   const existsInDefaultMaster = candidateItems.some(
@@ -875,28 +882,19 @@ if (
   item.saveToMaster !== false &&
   !existsInDefaultMaster
 ) {
-  const { error: masterError } = await supabase
-    .from("user_item_master")
-    .upsert(
-      [
-        {
-  user_id: userId,
-  name: trimmedName,
-  yomi: toHiragana(trimmedName),
-  category: categoryToSave,
-}
-      ],
-      {
-        onConflict: "user_id,name",
-      }
-    );
-
-  if (masterError) {
-    console.error("マスタ保存エラー:", masterError);
+  try {
+    await createMyItem(supabase, userId, { name: trimmedName, category: categoryToSave });
+    await Promise.all([fetchCandidateItems(), fetchUserMasterItems()]);
+  } catch (error) {
+    alert("買い物リストには追加しました。My Itemsへの登録はできませんでした。\n" +
+      (error instanceof Error ? error.message : "再試行してください。"));
+    return false;
   }
 }
 
 setSearch("");
+return true;
+  } finally { addingItem.current = false; }
 };
 
   const toggleItem = async (id: number, currentChecked: boolean) => {
@@ -1421,6 +1419,21 @@ await supabase
     </button>
   </div>
 
+  {masterDraft && userId && (
+    <div className="mb-4">
+      <MyItemForm key={masterDraft.name} userId={userId} initialName={masterDraft.name} initialCategory={masterDraft.category}
+        submitLabel="My Itemsに登録してリストに追加"
+        onCancel={() => setMasterDraft(null)}
+        onSaved={async item => {
+          await Promise.all([fetchCandidateItems(), fetchUserMasterItems()]);
+          const success = await addItem({ name: item.name, category: item.category ?? "その他",
+            note: "", image_url: item.image_url ?? "🛒", saveToMaster: false, isManual: false });
+          if (!success) throw new Error("My Itemsには登録済みです。買い物リストへの追加を再試行するか、閉じてください。");
+          setMasterDraft(null);
+        }} />
+    </div>
+  )}
+
   {mode !== "all" ? (
     <div className="space-y-3">
       <div className="flex gap-2">
@@ -1557,15 +1570,8 @@ await supabase
               <div className="mt-3 flex flex-wrap gap-2">
                 <button
                   type="button"
-                  onClick={() =>
-                    addItem({
-                      name: search,
-                      category: selectedCategory,
-                      note: "",
-                      saveToMaster: true,
-                      isManual: true,
-                    })
-                  }
+                  disabled={masterDraft !== null}
+                  onClick={() => setMasterDraft({ name: search, category: selectedCategory })}
                   className="rounded-2xl bg-blue-500 px-4 py-3 text-sm font-bold text-white shadow-sm"
                 >
                   「{search}」をMy itemsに追加

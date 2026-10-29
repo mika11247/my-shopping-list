@@ -1,13 +1,11 @@
 "use client";
 
 import Header from "@/components/Header";
+import MyItemForm from "@/components/my-items/MyItemForm";
 import { deleteOwnedMasterItem, removeStoredImage } from "@/lib/shopping-security";
 import { useEffect, useState } from "react";
 import { supabase } from "../../lib/supabase";
 import { categories } from "@/lib/categories";
-import { getLimitByPlan } from "@/lib/planLimits";
-
-
 
 type MasterItem = {
   id: number;
@@ -18,36 +16,22 @@ type MasterItem = {
   image_url?: string | null;
 };
 
-const toHiragana = (text: string) => {
-  return text.replace(/[\u30a1-\u30f6]/g, (char) =>
-    String.fromCharCode(char.charCodeAt(0) - 0x60)
-  );
-};
-
-const isHiragana = (text: string) => {
-  return /^[\u3040-\u309F]+$/.test(text);
-};
-
 export default function MasterPage() {
   const [items, setItems] = useState<MasterItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [userId, setUserId] = useState<string | null>(null);
 
-  const [newItem, setNewItem] = useState("");
-  const [newCategory, setNewCategory] = useState("その他");
-
   const [editingId, setEditingId] = useState<number | null>(null);
   const [editName, setEditName] = useState("");
   const [editCategory, setEditCategory] = useState("その他");
 
-  const [newYomi, setNewYomi] = useState("");
+
 const [editYomi, setEditYomi] = useState("");
 
-const [newImageUrl, setNewImageUrl] = useState("");
+
 const [editImageUrl, setEditImageUrl] = useState("");
 
 const [userPlan, setUserPlan] = useState<string>("free");
-const [userRole, setUserRole] = useState<"admin" | "user">("user");
 
 const [theme, setTheme] = useState("default");
 const [uploading, setUploading] = useState(false);
@@ -84,8 +68,6 @@ useEffect(() => {
   };
 }, []);
 
-const masterLimit = getLimitByPlan(userRole, userPlan, "master");
-
   useEffect(() => {
     const getUser = async () => {
       const { data } = await supabase.auth.getUser();
@@ -106,7 +88,6 @@ const masterLimit = getLimitByPlan(userRole, userPlan, "master");
         console.error("profile取得エラー:", error);
       } else {
         setUserPlan(profile?.plan ?? "free");
-        setUserRole(profile?.role ?? "user");
       }
     };
   
@@ -161,64 +142,6 @@ const masterLimit = getLimitByPlan(userRole, userPlan, "master");
       data?.map((item: any) => item.groups).filter(Boolean) || [];
   
     setGroups(formatted);
-  };
-
-  const addMasterItem = async () => {
-    // 👇 追加（ここ一番上）
-if (items.length >= masterLimit) {
-  alert(`My itemsは${masterLimit}件まで登録できます`);
-  return;
-}
-    const trimmedName = newItem.trim();
-if (!trimmedName || !userId) return;
-
-let yomiToSave = newYomi.trim();
-
-if (!yomiToSave) {
-  if (isHiragana(trimmedName)) {
-    yomiToSave = trimmedName;
-  } else {
-    yomiToSave = toHiragana(trimmedName);
-  }
-}
-
-    const alreadyExists = items.some((item) => item.name === trimmedName);
-
-    if (alreadyExists) {
-      alert("すでに登録されています");
-      return;
-    }
-
-    const { data, error } = await supabase
-  .from("user_item_master")
-  .upsert(
-    [
-      {
-        user_id: userId,
-        name: trimmedName,
-        yomi: yomiToSave,
-        category: newCategory,
-        image_url: newImageUrl || "🛒",
-      },
-    ],
-    {
-      onConflict: "user_id,name",
-    }
-  )
-  .select()
-  .single();
-
-    if (error) {
-      console.error("追加エラー:", error);
-      return;
-    }
-
-   setItems((prev) => [...prev, data]);
-
-setNewItem("");
-setNewYomi("");
-setNewImageUrl(""); // ←ここ🔥
-setNewCategory("その他");
   };
 
   const updateMasterItem = async (
@@ -424,194 +347,7 @@ const compressImage = async (file: File) => {
   </p>
 </div>
 
-<div
-  className="mb-4 rounded-3xl bg-white p-4 shadow-sm"
-  style={{
-    border: `1px solid ${
-      theme === "default"
-        ? "#fbcfe8"
-        : "var(--ring-color)"
-    }`,
-  }}
->
-  <div className="flex flex-col gap-2">
-  <p className="text-sm font-bold text-gray-500">
-  新規アイテム登録
-</p>
-  <input
-    value={newItem}
-    onChange={(e) => setNewItem(e.target.value)}
-    onKeyDown={(e) => {
-      if (e.key === "Enter") {
-        addMasterItem();
-      }
-    }}
-    placeholder="アイテム追加"
-    className="rounded-xl border bg-white px-3 py-2 text-base text-gray-700 outline-none"
-style={{
-  borderColor:
-    theme === "default" ? "#fbcfe8" : "var(--ring-color)",
-}}
-onFocus={(e) => {
-  e.target.style.borderColor =
-    theme === "default" ? "#ec4899" : "var(--main-color)";
-}}
-onBlur={(e) => {
-  e.target.style.borderColor =
-    theme === "default" ? "#fbcfe8" : "var(--ring-color)";
-}}
-  />
-
-  {/* 👇これ追加🔥 */}
-  <input
-    value={newYomi}
-    onChange={(e) => setNewYomi(e.target.value)}
-    placeholder="よみ（ひらがな／空欄でもOK）"
-    className="rounded-xl border bg-white px-3 py-2 text-base text-gray-700 outline-none"
-style={{
-  borderColor:
-    theme === "default" ? "#fbcfe8" : "var(--ring-color)",
-}}
-onFocus={(e) => {
-  e.target.style.borderColor =
-    theme === "default" ? "#ec4899" : "var(--main-color)";
-}}
-onBlur={(e) => {
-  e.target.style.borderColor =
-    theme === "default" ? "#fbcfe8" : "var(--ring-color)";
-}}
-  />
-
-<input
-  value={newImageUrl}
-  onChange={(e) => setNewImageUrl(e.target.value)}
-  placeholder={
-    userPlan === "pro" || userPlan === "special"
-      ? "画像URL or 絵文字"
-      : "絵文字"
-  }
-  className="rounded-xl border bg-white px-3 py-2 text-base text-gray-700 outline-none"
-  style={{
-    borderColor:
-      theme === "default" ? "#fbcfe8" : "var(--ring-color)",
-  }}
-  onFocus={(e) => {
-    e.target.style.borderColor =
-      theme === "default" ? "#ec4899" : "var(--main-color)";
-  }}
-  onBlur={(e) => {
-    e.target.style.borderColor =
-      theme === "default" ? "#fbcfe8" : "var(--ring-color)";
-  }}
-/>
-
-{newImageUrl?.startsWith("http") && (
-  <img
-    src={newImageUrl}
-    className="h-20 w-20 rounded-xl object-cover shadow"
-  />
-)}
-
-{(userPlan === "pro" || userPlan === "special") && (
-  <label
-  className="flex cursor-pointer items-center justify-center rounded-xl px-3 py-2 text-sm font-bold shadow-sm"
-  style={{
-    backgroundColor:
-      theme === "default" ? "#fce7f3" : "var(--main-bg)",
-    color:
-      theme === "default" ? "#db2777" : "var(--main-text)",
-    border: `1px solid ${
-      theme === "default" ? "#fbcfe8" : "var(--ring-color)"
-    }`,
-  }}
->
-  画像を選択
-  <input
-    type="file"
-    accept="image/*"
-    onChange={async (e) => {
-      const file = e.target.files?.[0];
-      if (!file) return;
-
-      const url = await uploadImage(file);
-
-      if (url) {
-        // Keep previous images until the product is successfully saved.
-        setNewImageUrl(url);
-      }
-    }}
-    className="hidden"
-  />
-</label>
-)}
-
-
-
-{uploading && (
-  <p className="text-xs text-gray-400">
-    アップロード中...
-  </p>
-)}
-
-{newImageUrl?.startsWith("http") && (
-  <button
-    type="button"
-    onClick={() => setNewImageUrl("")}
-    className="text-xs text-red-500"
-  >
-    画像を削除
-  </button>
-)}
-
-  <div className="flex gap-2">
-    <select
-      value={newCategory}
-      onChange={(e) => setNewCategory(e.target.value)}
-      className="rounded-xl border bg-white px-3 py-2 text-base text-gray-700 outline-none"
-style={{
-  borderColor:
-    theme === "default" ? "#fbcfe8" : "var(--ring-color)",
-}}
-onFocus={(e) => {
-  e.target.style.borderColor =
-    theme === "default" ? "#ec4899" : "var(--main-color)";
-}}
-onBlur={(e) => {
-  e.target.style.borderColor =
-    theme === "default" ? "#fbcfe8" : "var(--ring-color)";
-}}
-    >
-      {categories.map((cat) => (
-        <option
-        key={cat.name}
-        value={cat.name}
-      >
-        {cat.emoji} {cat.name}
-      </option>
-      ))}
-    </select>
-
-    <button
-      onClick={addMasterItem}
-      className="rounded-xl px-4 py-2 text-sm text-white"
-style={{
-  backgroundColor:
-    theme === "default" ? "#ec4899" : "var(--main-color)",
-}}
-    >
-      追加
-    </button>
-
-    {items.length >= masterLimit - 5 && userPlan !== "pro" && (
-  <p className="text-xs text-gray-400">
-    あと{masterLimit - items.length}件で上限です
-  </p>
-)}
-
-  </div>
-</div>
-
-</div>
+{userId && <MyItemForm userId={userId} onSaved={async () => { await fetchMasterItems(); }} />}
 
 <div
   className="mb-4 rounded-3xl bg-white/80 p-3 shadow-sm"
