@@ -22,7 +22,8 @@ jobs:
         env:
           WITHDRAWAL_WORKER_SECRET: ${{ secrets.WITHDRAWAL_WORKER_SECRET }}
         run: |
-          if [[ ! "$WITHDRAWAL_WORKER_SECRET" =~ ^[[:xdigit:]]{64}$ ]]; then
+          # Standard padded Base64 encoding of 32 bytes.
+          if [[ ! "$WITHDRAWAL_WORKER_SECRET" =~ ^[A-Za-z0-9+/]{43}=$ ]]; then
             echo 'Worker credential is missing or invalid.'
             exit 1
           fi

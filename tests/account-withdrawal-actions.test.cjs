@@ -8,7 +8,7 @@ const { join } = require("node:path");
 const workflow = readFileSync(join(__dirname, "../.github/workflows/account-withdrawal-worker.yml"), "utf8");
 const script = workflow.split("        run: |")[1].trimEnd().split(/\r?\n/).map(line => line.slice(10)).join("\n");
 const bash = process.platform === "win32" ? "C:/Program Files/Git/bin/bash.exe" : "bash";
-const secret = "a1".repeat(32);
+const secret = Buffer.alloc(32, 0xfb).toString("base64");
 
 test("worker schedule and manual dispatch share a default-off main-only gate", () => {
   assert.match(workflow, /cron: "2-57\/5 \* \* \* \*"/);
@@ -37,7 +37,8 @@ test("worker HTTP request keeps secrets out of arguments and logs and fails on n
   ${script}
   `);
   for (const [status, credential, expected] of [["200", secret, 0], ["403", secret, 1],
-    ["302", secret, 1], ["503", secret, 1], ["transport", secret, 1], ["200", "", 1]]) {
+    ["302", secret, 1], ["503", secret, 1], ["transport", secret, 1], ["200", "", 1],
+    ["200", "a1".repeat(32), 1], ["200", Buffer.alloc(31).toString("base64"), 1]]) {
     const run = spawnSync(bash, ["runner.sh"], {
       cwd: dir, encoding: "utf8",
       env: { ...process.env, FIXTURE_STATUS: status, WITHDRAWAL_WORKER_SECRET: credential },
