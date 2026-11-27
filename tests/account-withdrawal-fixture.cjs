@@ -7,6 +7,8 @@ const base = read("tests/fixtures/security-schema.sql")
   .filter((line) => !/^(CREATE ROLE|CREATE SCHEMA|CREATE TABLE auth\.users|CREATE TABLE storage\.objects|CREATE FUNCTION auth\.uid)/.test(line))
   .join("\n");
 process.stdout.write(`
+CREATE SCHEMA IF NOT EXISTS extensions;
+CREATE SCHEMA IF NOT EXISTS vault;
 CREATE OR REPLACE FUNCTION auth.uid() RETURNS uuid
 LANGUAGE sql STABLE AS $$
   SELECT coalesce(nullif(current_setting('request.jwt.claim.sub', true), ''),
@@ -19,5 +21,6 @@ for (const sql of [
   "supabase/migrations/20261127000100_shopping_group_transfer.sql",
   "supabase/migrations/20261127000200_account_withdrawal.sql",
   "supabase/migrations/20261127000300_account_withdrawal_write_fence.sql",
+  "supabase/migrations/20261127000400_account_withdrawal_cron.sql",
 ]) process.stdout.write(read(sql) + "\n");
 process.stdout.write("NOTIFY pgrst, 'reload schema';\n");

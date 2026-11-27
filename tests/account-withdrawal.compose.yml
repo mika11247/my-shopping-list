@@ -10,7 +10,16 @@ services:
         psql -v ON_ERROR_STOP=1 -c "create role anon; create role authenticated; create role service_role bypassrls; create schema auth;"
         pg_ctl -D /tmp/withdrawal-db -m fast stop
         printf 'host all all samenet trust\n' >> /tmp/withdrawal-db/pg_hba.conf
-        exec postgres -D /tmp/withdrawal-db -h 0.0.0.0
+        umask 077
+        head -c 32 /dev/urandom | od -An -tx1 | tr -d ' \n' > /tmp/withdrawal-db/vault-test.key
+        printf '%s\n' '#!/bin/sh' 'cat /tmp/withdrawal-db/vault-test.key' > /tmp/withdrawal-db/vault-getkey
+        chmod 700 /tmp/withdrawal-db/vault-getkey
+        exec postgres -D /tmp/withdrawal-db -h 0.0.0.0 \
+          -c shared_preload_libraries=supautils,pg_cron,pg_net,supabase_vault \
+          -c vault.getkey_script=/tmp/withdrawal-db/vault-getkey \
+          -c 'supautils.policy_grants={"withdrawal_storage_operator":["storage.objects"]}' \
+          -c app.withdrawal_cron_allow_isolated_http=on \
+          -c cron.database_name=postgres
     healthcheck:
       test: [CMD, pg_isready, -h, db]
       interval: 1s
