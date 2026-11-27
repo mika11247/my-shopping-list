@@ -1,5 +1,6 @@
 import { createHmac, randomInt, timingSafeEqual } from "node:crypto";
-import { processWithdrawal, sendWithdrawalMail, withdrawalClient } from "@/lib/server/account-withdrawal";
+import { after } from "next/server";
+import { notifyWithdrawalOperator, processWithdrawal, sendWithdrawalMail, withdrawalClient } from "@/lib/server/account-withdrawal";
 import { pilotAccounts, withdrawalVerificationMethod } from "@/lib/server/withdrawal-pilot";
 
 const uuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -50,7 +51,6 @@ export async function POST(request: Request) {
         : await admin.rpc("account_withdrawal_status", { p_job: body.id });
       if (status.error) throw new Error("Status lookup failed");
       if (!status.data) return response(404, { error: "退会の受付情報が見つかりません。" });
-      if (!scoped) await processWithdrawal(admin, body.id).catch(() => undefined);
       return response(200, { stage: status.data });
     }
     if (scoped ? process.env.WITHDRAWAL_PILOT_INTAKE_ENABLED !== "true"
@@ -122,7 +122,9 @@ export async function POST(request: Request) {
       return response(409, { error: "共有グループの状況が変わりました。譲渡状況と削除対象を確認してください。" });
     }
     if (result.error || typeof result.data !== "string") throw new Error("Withdrawal start failed");
-    return response(202, { id: result.data, stage: "pending" });
+    const jobId = result.data;
+    if (general) after(() => notifyWithdrawalOperator(jobId));
+    return response(202, { id: jobId, stage: "pending" });
   } catch {
     return response(503, { error: "処理を続けられませんでした。時間をおいて再度お試しください。" });
   }

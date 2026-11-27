@@ -34,6 +34,25 @@ export async function sendWithdrawalMail(to: string, subject: string, text: stri
   if (error) throw new Error("Withdrawal mail failed");
 }
 
+export async function notifyWithdrawalOperator(jobId: string) {
+  for (const delay of [0, 250, 500]) {
+    if (delay) await new Promise<void>((resolve) => setTimeout(resolve, delay));
+    try {
+      await sendWithdrawalMail(
+        "mglitter.info@gmail.com",
+        "My Shopping List 退会受付通知",
+        "退会申請を受け付けました。GitHub Actionsで退会ワーカーを手動実行し、保留中の工程を確認してください。\n" +
+          "https://github.com/mika11247/my-shopping-list/actions/workflows/account-withdrawal-worker.yml",
+        "withdrawal-operator/" + jobId,
+      );
+      return;
+    } catch {
+      // Retry the same logical message without exposing provider response data.
+    }
+  }
+  console.warn("Withdrawal operator notification failed after retries");
+}
+
 type WithdrawalImage = {
   id: string;
   bucket: string;
