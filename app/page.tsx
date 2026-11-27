@@ -2,6 +2,7 @@
 import { saveMyProfile, notifyShoppingInvitation } from "@/lib/shopping-security";
 
 import Header from "@/components/Header";
+import ShoppingGroupTransfer from "@/components/ShoppingGroupTransfer";
 import { useEffect, useMemo, useRef, useState } from "react";
 import MyItemForm from "@/components/my-items/MyItemForm";
 import { createMyItem, type MyItemDraft } from "@/lib/myItems";
@@ -1334,6 +1335,12 @@ await supabase
                 </li>
               ))}
             </ul>
+          )}
+
+          {process.env.NEXT_PUBLIC_ACCOUNT_WITHDRAWAL_ENABLED === "true" && selectedGroupId && userId && (
+            <ShoppingGroupTransfer key={selectedGroupId} groupId={selectedGroupId} userId={userId}
+              owner={isCurrentUserOwner} members={groupMembers}
+              onChanged={async () => { await Promise.all([fetchGroupMembers(), fetchOwnedGroups(), fetchGroupOwnerPlan()]); }} />
           )}
 
           {pendingInvitations.map((invite) => {

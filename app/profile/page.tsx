@@ -2,6 +2,7 @@
 
 import { saveMyProfile } from "@/lib/shopping-security";
 import Header from "@/components/Header";
+import AccountWithdrawal, { withdrawalReceiptKey } from "@/components/AccountWithdrawal";
 import { useEffect, useState } from "react";
 import { supabase } from "../../lib/supabase";
 import { useRouter } from "next/navigation";
@@ -24,6 +25,7 @@ export default function ProfilePage() {
   const [groupCount, setGroupCount] = useState(0);
   const [memberCount, setMemberCount] = useState(0);
   const [loading, setLoading] = useState(true);
+  const [withdrawalCompleted, setWithdrawalCompleted] = useState(false);
   const [message, setMessage] = useState("");
   const [provider, setProvider] = useState("");
 
@@ -130,7 +132,7 @@ export default function ProfilePage() {
     } = await supabase.auth.getUser();
 
     if (!user) {
-      router.push("/login");
+      if (!localStorage.getItem(withdrawalReceiptKey)) router.push("/login");
       return;
     }
 
@@ -306,8 +308,6 @@ if (profileError) {
     router.push("/login");
   };
 
-  const handleWithdraw = () => {setMessage("退会機能は安全性確認のため停止中です。お問い合わせください。");};
-
   useEffect(() => {
     fetchProfile().catch(() => {
       setMessage("プロフィールを取得できませんでした。再読み込みしてください。");
@@ -390,7 +390,7 @@ if (profileError) {
         </div>
         )}
 
-        {loading ? (
+        {!withdrawalCompleted && (loading ? (
           <p className="text-sm text-gray-500">読み込み中...</p>
         ) : (
           
@@ -689,17 +689,9 @@ style={{
   ログアウト
 </button>
 
-<button
-  onClick={handleWithdraw}
-  disabled
-  title="安全性確認のため退会機能を停止しています"
-  className="w-full rounded-full bg-white px-4 py-3 text-sm font-bold text-red-500 shadow ring-1 ring-red-100"
->
-  退会機能は停止中
-</button>
-
         </div>
-      )}
+      ))}
+      <AccountWithdrawal onCompleted={setWithdrawalCompleted} />
       </div>
     </main>
   );
