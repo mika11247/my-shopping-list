@@ -1,5 +1,7 @@
 # 退会機能の検証と本番反映
 
+**定期実行は [GitHub Actions運用手順](account-withdrawal-actions.md) に従う。** 以下のSupabase Cronに関する記載は隔離試験・旧方式の記録。旧SQLは `supabase/archive/` に移動し、本番では1〜3本目を使用する。旧Cronの隔離試験を再現する場合のみfixtureに `--with-cron` を指定する。
+
 本番反映の判定条件、保全・復元、4本の適用順序とFirewall切替は [本番反映判定](account-withdrawal-release.md) を参照。
 
 ## 隔離検証

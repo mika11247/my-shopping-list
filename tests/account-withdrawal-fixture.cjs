@@ -25,6 +25,8 @@ for (const sql of [
   "supabase/migrations/20261127000100_shopping_group_transfer.sql",
   "supabase/migrations/20261127000200_account_withdrawal.sql",
   "supabase/migrations/20261127000300_account_withdrawal_write_fence.sql",
-  "supabase/migrations/20261127000400_account_withdrawal_cron.sql",
 ]) process.stdout.write(read(sql) + "\n");
+if (process.argv.includes("--with-cron")) {
+  process.stdout.write(read("supabase/archive/20261127000400_account_withdrawal_cron.sql") + "\n");
+}
 process.stdout.write("NOTIFY pgrst, 'reload schema';\n");

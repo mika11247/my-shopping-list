@@ -73,7 +73,7 @@ async function call(body, headers = {}) {
   return { status: response.status, data: await response.json() };
 }
 
-test("a browser withdrawal completes via Cron, the real Next worker, Auth, Storage and DB", { timeout: 160000 }, async () => {
+test("a browser withdrawal completes via the real POST worker, Auth, Storage and DB", { timeout: 160000 }, async () => {
   const anon = key("anon");
   const service = key("service_role");
   const admin = client(service);
@@ -205,7 +205,8 @@ test("a browser withdrawal completes via Cron, the real Next worker, Auth, Stora
     assert.equal(good(await admin.rpc("advance_account_withdrawal", {
       p_job: id, p_lease: lease, p_action: "release",
     })), true);
-    relay = spawn("docker", ["exec", "-i", project + "-storage-1", "node", "-e",
+    if (process.env.WITHDRAWAL_ARCHIVED_CRON_TEST === "true") {
+      relay = spawn("docker", ["exec", "-i", project + "-storage-1", "node", "-e",
       `(${cronRelay.toString()})(${JSON.stringify(worker)})`], { stdio: ["pipe", "pipe", "ignore"] });
     const ready = new Promise((resolve) => {
       createInterface({ input: relay.stdout }).on("line", async (line) => {
@@ -238,7 +239,14 @@ test("a browser withdrawal completes via Cron, the real Next worker, Auth, Stora
     assert.equal(mail.filter((message) => message.to === a.email).length, 1);
     sql(`SELECT cron.unschedule('account-withdrawal-real-worker-test');
       DELETE FROM vault.secrets WHERE name = 'account_withdrawal_worker_secret';`);
-    cronRegistered = false;
+      cronRegistered = false;
+    } else {
+      for (let attempt = 0; attempt < 6 && !mail.some(message => message.to === a.email); attempt++) {
+        assert.equal((await call({ action: "worker" }, { "x-withdrawal-worker": worker })).status, 200);
+      }
+      assert.equal(sql(`SELECT public.account_withdrawal_status('${id}')`), "complete");
+      assert.equal(mail.filter((message) => message.to === a.email).length, 1);
+    }
     allowProgress = true;
     await page.getByText("退会処理が完了しました。", { exact: true }).waitFor({ timeout: 45000 });
     assert.equal((await call({ action: "status", id })).data.stage, "complete");

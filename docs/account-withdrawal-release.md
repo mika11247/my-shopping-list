@@ -1,5 +1,7 @@
 # 退会機能の本番反映判定
 
+**現在の本番スケジューラーは [GitHub Actions](account-withdrawal-actions.md)。** 以下のSupabase Cron、Vault、4本目の適用手順は旧方式の記録。旧SQLはアーカイブ済みで、1〜3本目の再適用も不要。
+
 ## 反映前に管理者が確認する項目
 
 - VercelのProductionとSupabaseのプロジェクトrefを照合する。現行の `/api/delete-user` のFirewall denyとアプリ側の停止を確認する。専用ブランチは `vercel.json` でGit自動デプロイを抑止している。別ブランチを使う場合はpush前にそのブランチも抑止する。本番Supabaseに接続するPreviewを検証に使用しない。

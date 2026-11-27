@@ -1,0 +1,44 @@
+name: Account withdrawal worker
+
+on:
+  schedule:
+    - cron: "2-57/5 * * * *"
+  workflow_dispatch:
+
+permissions: {}
+
+concurrency:
+  group: account-withdrawal-production
+  cancel-in-progress: false
+
+jobs:
+  dispatch:
+    # Remove the release hold only after an approved production smoke test.
+    if: ${{ false && github.repository == 'mika11247/my-shopping-list' && github.ref == 'refs/heads/main' && vars.ACCOUNT_WITHDRAWAL_WORKER_ENABLED == 'true' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    steps:
+      - name: Dispatch one withdrawal step
+        shell: bash
+        env:
+          WITHDRAWAL_WORKER_SECRET: ${{ secrets.WITHDRAWAL_WORKER_SECRET }}
+        run: |
+          if [[ ! "$WITHDRAWAL_WORKER_SECRET" =~ ^[[:xdigit:]]{64}$ ]]; then
+            echo 'Worker credential is missing or invalid.'
+            exit 1
+          fi
+          # Send the secret on stdin, never in process arguments or output.
+          if ! status=$(printf 'x-withdrawal-worker: %s\n' "$WITHDRAWAL_WORKER_SECRET" |
+            curl --disable --silent --output /dev/null --write-out '%{http_code}' \
+              --connect-timeout 10 --max-time 60 --proto '=https' \
+              --header @- --header 'Content-Type: application/json' \
+              --data-binary '{"action":"worker"}' \
+              'https://my-shopping-list-vxll.vercel.app/api/delete-user'); then
+            echo 'Worker transport failed.'
+            exit 1
+          fi
+          if [[ ! "$status" =~ ^2[0-9][0-9]$ ]]; then
+            printf 'Worker returned HTTP %s.\n' "$status"
+            exit 1
+          fi
+          echo 'Worker request succeeded.'

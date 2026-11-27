@@ -1,3 +1,4 @@
+-- Archived. GitHub Actions is the selected production scheduler.
 BEGIN;
 
 CREATE EXTENSION IF NOT EXISTS pg_cron;
