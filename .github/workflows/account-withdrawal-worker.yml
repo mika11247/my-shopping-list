@@ -13,8 +13,7 @@ concurrency:
 
 jobs:
   dispatch:
-    # Remove the release hold only after an approved production smoke test.
-    if: ${{ false && github.repository == 'mika11247/my-shopping-list' && github.ref == 'refs/heads/main' && vars.ACCOUNT_WITHDRAWAL_WORKER_ENABLED == 'true' }}
+    if: ${{ github.repository == 'mika11247/my-shopping-list' && github.ref == 'refs/heads/main' && vars.ACCOUNT_WITHDRAWAL_WORKER_ENABLED == 'true' }}
     runs-on: ubuntu-latest
     timeout-minutes: 2
     steps:
@@ -32,6 +31,7 @@ jobs:
             curl --disable --silent --output /dev/null --write-out '%{http_code}' \
               --connect-timeout 10 --max-time 60 --proto '=https' \
               --header @- --header 'Content-Type: application/json' \
+              --header 'Origin: https://my-shopping-list-vxll.vercel.app' \
               --data-binary '{"action":"worker"}' \
               'https://my-shopping-list-vxll.vercel.app/api/delete-user'); then
             echo 'Worker transport failed.'
