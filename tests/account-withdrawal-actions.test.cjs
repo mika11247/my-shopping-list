@@ -10,8 +10,8 @@ const script = workflow.split("        run: |")[1].trimEnd().split(/\r?\n/).map(
 const bash = process.platform === "win32" ? "C:/Program Files/Git/bin/bash.exe" : "bash";
 const secret = Buffer.alloc(32, 0xfb).toString("base64");
 
-test("worker schedule and manual dispatch share a default-off main-only gate", () => {
-  assert.match(workflow, /cron: "2-57\/5 \* \* \* \*"/);
+test("pilot worker dispatch is manual and has a default-off main-only gate", () => {
+  assert.doesNotMatch(workflow, /^  schedule:/m);
   assert.match(workflow, /workflow_dispatch:/);
   assert.doesNotMatch(workflow, /false &&/);
   assert.match(workflow, /github\.repository == 'mika11247\/my-shopping-list'/);
