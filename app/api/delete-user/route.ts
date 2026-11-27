@@ -19,6 +19,12 @@ function supportsWorker(request: Request) {
 }
 
 export async function POST(request: Request) {
+  const body = await request.json().catch(() => null);
+  if (body?.action === "worker-probe") {
+    return supportsWorker(request)
+      ? response(200, { success: true })
+      : response(401, { error: "認証が必要です。" });
+  }
   const configuredPilot = process.env.WITHDRAWAL_PILOT_UUIDS;
   const pilot = pilotAccounts(configuredPilot);
   const scoped = configuredPilot !== undefined;
@@ -27,7 +33,6 @@ export async function POST(request: Request) {
     (!general && (!scoped || pilot.length === 0 || process.env.ACCOUNT_WITHDRAWAL_INTAKE_DISABLED !== "true"))) {
     return response(503, { error: "退会機能は安全性確認のため停止中です。お問い合わせください。" });
   }
-  const body = await request.json().catch(() => null);
   if (!body || typeof body !== "object") return response(400, { error: "入力を確認してください。" });
   try {
     if (body.action === "worker") {

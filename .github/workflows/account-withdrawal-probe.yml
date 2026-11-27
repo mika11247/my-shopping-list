@@ -1,0 +1,49 @@
+name: Account withdrawal connectivity probe
+
+on:
+  schedule:
+    - cron: "4-59/5 * * * *"
+  workflow_dispatch:
+
+permissions: {}
+
+concurrency:
+  group: account-withdrawal-probe-production
+  cancel-in-progress: false
+
+jobs:
+  probe:
+    if: ${{ github.repository == 'mika11247/my-shopping-list' && github.ref == 'refs/heads/main' && vars.ACCOUNT_WITHDRAWAL_PROBE_ENABLED == 'true' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    steps:
+      - name: Check worker HTTP authentication without processing jobs
+        shell: bash
+        env:
+          WITHDRAWAL_WORKER_SECRET: ${{ secrets.WITHDRAWAL_WORKER_SECRET }}
+        run: |
+          if [[ ! "$WITHDRAWAL_WORKER_SECRET" =~ ^[[:xdigit:]]{64}$ ]]; then
+            echo 'Worker credential is missing or invalid.'
+            exit 1
+          fi
+
+          check() {
+            local label=$1 expected=$2 status
+            shift 2
+            if ! status=$(curl --disable --silent --output /dev/null --write-out '%{http_code}' \
+              --connect-timeout 10 --max-time 20 --proto '=https' \
+              --header 'Content-Type: application/json' \
+              --header 'Origin: https://my-shopping-list-vxll.vercel.app' \
+              "$@" --data-binary '{"action":"worker-probe"}' \
+              'https://my-shopping-list-vxll.vercel.app/api/delete-user'); then
+              printf '%s: transport failed.\n' "$label"
+              return 1
+            fi
+            printf '%s: HTTP %s\n' "$label" "$status"
+            [[ "$status" == "$expected" ]]
+          }
+
+          printf 'x-withdrawal-worker: %s\n' "$WITHDRAWAL_WORKER_SECRET" |
+            check 'Valid credential' 200 --header @-
+          check 'Invalid credential' 401 --header 'x-withdrawal-worker: invalid-probe'
+          check 'Missing credential' 401

@@ -13,7 +13,7 @@ const secret = "a1".repeat(32);
 test("worker schedule and manual dispatch share a default-off main-only gate", () => {
   assert.match(workflow, /cron: "2-57\/5 \* \* \* \*"/);
   assert.match(workflow, /workflow_dispatch:/);
-  assert.match(workflow, /if: \$\{\{ false &&/);
+  assert.doesNotMatch(workflow, /false &&/);
   assert.match(workflow, /github\.repository == 'mika11247\/my-shopping-list'/);
   assert.match(workflow, /github\.ref == 'refs\/heads\/main'/);
   assert.match(workflow, /vars\.ACCOUNT_WITHDRAWAL_WORKER_ENABLED == 'true'/);
@@ -29,6 +29,7 @@ test("worker HTTP request keeps secrets out of arguments and logs and fails on n
     [[ "$header" == "x-withdrawal-worker: $WITHDRAWAL_WORKER_SECRET" ]] || exit 90
     [[ "$*" != *"$WITHDRAWAL_WORKER_SECRET"* && "$*" != *--location* ]] || exit 91
     [[ "$*" == *'--header @-'* && "$*" == *'--proto =https'* ]] || exit 92
+    [[ "$*" == *'Origin: https://my-shopping-list-vxll.vercel.app'* ]] || exit 94
     [[ "${"$"}{@: -1}" == 'https://my-shopping-list-vxll.vercel.app/api/delete-user' ]] || exit 93
     if [[ "$FIXTURE_STATUS" == transport ]]; then exit 7; fi
     printf '%s' "$FIXTURE_STATUS"
