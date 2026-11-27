@@ -60,8 +60,18 @@ export default function AccountWithdrawal({ onCompleted }: { onCompleted: (value
     async function check() {
       try {
         const { id, owner } = JSON.parse(receipt);
+        const keepReceipt = async () => {
+          const { data } = await supabase.auth.getSession();
+          if (!active || window.localStorage.getItem(withdrawalReceiptKey) !== receipt) return false;
+          if (data.session && data.session.user.id !== owner) {
+            storeReceipt();
+            return false;
+          }
+          return true;
+        };
+        if (!await keepReceipt()) return;
         const status = await request({ action: "status", id }, false);
-        if (!active) return;
+        if (!await keepReceipt()) return;
         if (status.stage === "complete") {
           setCompleted(true);
           onCompleted(true);
