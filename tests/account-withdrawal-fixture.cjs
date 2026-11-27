@@ -29,4 +29,7 @@ for (const sql of [
 if (process.argv.includes("--with-cron")) {
   process.stdout.write(read("supabase/archive/20261127000400_account_withdrawal_cron.sql") + "\n");
 }
+if (process.argv.includes("--with-pilot")) {
+  process.stdout.write(read("supabase/migrations/20261127000500_account_withdrawal_pilot.sql") + "\n");
+}
 process.stdout.write("NOTIFY pgrst, 'reload schema';\n");

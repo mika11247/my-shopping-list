@@ -81,9 +81,11 @@ async function retireImage(
   if (removed.error) throw new Error("Original image removal failed");
 }
 
-export async function processWithdrawal(client: ReturnType<typeof withdrawalClient>, id: string | null) {
+export async function processWithdrawal(client: ReturnType<typeof withdrawalClient>, id: string | null, pilot?: string[]) {
   const lease = randomUUID();
-  const claimed = await client.rpc("claim_account_withdrawal", { p_job: id, p_lease: lease });
+  const claimed = pilot
+    ? await client.rpc("claim_pilot_withdrawal", { p_users: pilot, p_lease: lease })
+    : await client.rpc("claim_account_withdrawal", { p_job: id, p_lease: lease });
   if (claimed.error) throw new Error("Withdrawal claim failed");
   const job = claimed.data as { id: string; stage: string; email: string | null; userId: string | null } | null;
   if (!job) return;
@@ -98,6 +100,7 @@ export async function processWithdrawal(client: ReturnType<typeof withdrawalClie
     if (images.error) throw new Error("Withdrawal image lookup failed");
     const image = (images.data as WithdrawalImage[])[0];
     if (image) {
+      if (pilot) throw new Error("Pilot withdrawal cannot process owned images");
       await retireImage(client, image, job.id, lease);
       await advance("release");
     } else {

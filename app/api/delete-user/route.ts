@@ -1,5 +1,6 @@
 import { createHmac, randomInt, timingSafeEqual } from "node:crypto";
 import { processWithdrawal, sendWithdrawalMail, withdrawalClient } from "@/lib/server/account-withdrawal";
+import { pilotAccounts, withdrawalVerificationMethod } from "@/lib/server/withdrawal-pilot";
 
 const uuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const response = (status: number, body: object) => Response.json(body, {
@@ -18,26 +19,37 @@ function supportsWorker(request: Request) {
 }
 
 export async function POST(request: Request) {
-  if (process.env.ACCOUNT_WITHDRAWAL_ENABLED !== "true") {
+  const configuredPilot = process.env.WITHDRAWAL_PILOT_UUIDS;
+  const pilot = pilotAccounts(configuredPilot);
+  const scoped = configuredPilot !== undefined;
+  const general = !scoped && process.env.ACCOUNT_WITHDRAWAL_GENERAL_RELEASE_ENABLED === "true";
+  if (process.env.ACCOUNT_WITHDRAWAL_ENABLED !== "true" ||
+    (!general && (!scoped || pilot.length === 0 || process.env.ACCOUNT_WITHDRAWAL_INTAKE_DISABLED !== "true"))) {
     return response(503, { error: "退会機能は安全性確認のため停止中です。お問い合わせください。" });
   }
   const body = await request.json().catch(() => null);
   if (!body || typeof body !== "object") return response(400, { error: "入力を確認してください。" });
   try {
     if (body.action === "worker") {
+      if (scoped && process.env.WITHDRAWAL_PILOT_WORKER_ENABLED !== "true") {
+        return response(503, { error: "退会ワーカーは停止中です。" });
+      }
       if (!supportsWorker(request)) return response(401, { error: "認証が必要です。" });
-      await processWithdrawal(withdrawalClient(true), null);
+      await processWithdrawal(withdrawalClient(true), null, scoped ? pilot : undefined);
       return response(200, { success: true });
     }
     if (body.action === "status" && typeof body.id === "string" && uuid.test(body.id)) {
       const admin = withdrawalClient(true);
-      const status = await admin.rpc("account_withdrawal_status", { p_job: body.id });
+      const status = scoped
+        ? await admin.rpc("pilot_withdrawal_status", { p_job: body.id, p_users: pilot })
+        : await admin.rpc("account_withdrawal_status", { p_job: body.id });
       if (status.error) throw new Error("Status lookup failed");
       if (!status.data) return response(404, { error: "退会の受付情報が見つかりません。" });
-      await processWithdrawal(admin, body.id).catch(() => undefined);
+      if (!scoped) await processWithdrawal(admin, body.id).catch(() => undefined);
       return response(200, { stage: status.data });
     }
-    if (process.env.ACCOUNT_WITHDRAWAL_INTAKE_DISABLED === "true") {
+    if (scoped ? process.env.WITHDRAWAL_PILOT_INTAKE_ENABLED !== "true"
+      : process.env.ACCOUNT_WITHDRAWAL_INTAKE_DISABLED === "true") {
       return response(503, { error: "現在、新しい退会手続きの受付を停止しています。" });
     }
 
@@ -49,14 +61,14 @@ export async function POST(request: Request) {
     if (authenticated.error || !user || !user.email || !user.email_confirmed_at) {
       return response(401, { error: "確認済みのアカウントでログインしてください。" });
     }
+    if (scoped && !pilot.includes(user.id.toLowerCase())) return response(403, { error: "退会試験の対象外です。" });
     const claims = JSON.parse(Buffer.from(token.split(".")[1], "base64url").toString());
     const session = claims.session_id;
     if (typeof session !== "string" || !uuid.test(session)) {
       return response(401, { error: "ログインし直してください。" });
     }
-    const googleSession = user.identities?.some((identity) => identity.provider === "google") &&
-      Array.isArray(claims.amr) && claims.amr.some((method: { method?: string }) => method?.method === "oauth");
-    const usePassword = !googleSession && user.identities?.some((identity) => identity.provider === "email") === true;
+    const method = withdrawalVerificationMethod(user.identities ?? [], claims.amr);
+    const usePassword = method === "password";
     const admin = withdrawalClient(true);
     const activeSession = await admin.rpc("withdrawal_session_is_active", { p_user: user.id, p_session: session });
     if (activeSession.error) throw new Error("Session lookup failed");
@@ -64,7 +76,7 @@ export async function POST(request: Request) {
     if (body.action === "preview") {
       const preview = await admin.rpc("account_withdrawal_preview", { p_user: user.id });
       if (preview.error) throw new Error("Preview failed");
-      return response(200, { groups: preview.data, method: usePassword ? "password" : "email" });
+      return response(200, { groups: preview.data, method });
     }
     if (body.action === "code" && !usePassword) {
       const code = String(randomInt(0, 1000000)).padStart(6, "0");
@@ -95,7 +107,12 @@ export async function POST(request: Request) {
       confirmed = !check.error && check.data === true;
     }
     if (!confirmed) return response(403, { error: "パスワードまたは確認コードを確認してください。" });
-    const result = await admin.rpc("begin_account_withdrawal", { p_user: user.id, p_confirmed: body.groups });
+    if (scoped && process.env.WITHDRAWAL_PILOT_BEGIN_ENABLED !== "true") {
+      return response(503, { error: "現在、退会処理の確定を停止しています。" });
+    }
+    const result = scoped
+      ? await admin.rpc("begin_pilot_withdrawal", { p_user: user.id, p_users: pilot, p_confirmed: body.groups })
+      : await admin.rpc("begin_account_withdrawal", { p_user: user.id, p_confirmed: body.groups });
     if (result.error?.code === "23514") {
       return response(409, { error: "共有グループの状況が変わりました。譲渡状況と削除対象を確認してください。" });
     }

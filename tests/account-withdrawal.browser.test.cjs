@@ -11,6 +11,7 @@ const path = require("node:path");
 const api = "http://127.0.0.1:35539";
 const origin = "http://127.0.0.1:35530";
 const worker = "withdrawal-local-worker-secret-for-tests";
+const pilotTest = process.env.WITHDRAWAL_SCOPED_TEST === "true";
 const secret = "withdrawal-isolated-test-signing-secret";
 const encode = (value) => Buffer.from(JSON.stringify(value)).toString("base64url");
 const project = "shopping-withdrawal-cron";
@@ -77,6 +78,7 @@ test("a browser withdrawal completes via the real POST worker, Auth, Storage and
   const anon = key("anon");
   const service = key("service_role");
   const admin = client(service);
+  const allowed = [randomUUID(), randomUUID()];
   const mail = [];
   const mailbox = createServer(async (request, response) => {
     const chunks = [];
@@ -93,6 +95,13 @@ test("a browser withdrawal completes via the real POST worker, Auth, Storage and
       SUPABASE_SERVICE_ROLE_KEY: service, NEXT_TELEMETRY_DISABLED: "1",
       NEXT_FONT_GOOGLE_MOCKED_RESPONSES: path.join(__dirname, "account-withdrawal.fonts.cjs"),
       ACCOUNT_WITHDRAWAL_ENABLED: "true", NEXT_PUBLIC_ACCOUNT_WITHDRAWAL_ENABLED: "true",
+      ACCOUNT_WITHDRAWAL_GENERAL_RELEASE_ENABLED: "true",
+      ...(pilotTest ? {
+        ACCOUNT_WITHDRAWAL_GENERAL_RELEASE_ENABLED: "false", ACCOUNT_WITHDRAWAL_INTAKE_DISABLED: "true",
+        WITHDRAWAL_PILOT_UUIDS: allowed.join(","), WITHDRAWAL_PILOT_INTAKE_ENABLED: "true",
+        WITHDRAWAL_PILOT_BEGIN_ENABLED: "true",
+        WITHDRAWAL_PILOT_WORKER_ENABLED: "true",
+      } : {}),
       WITHDRAWAL_WORKER_SECRET: worker, RESEND_API_KEY: "isolated-fixture-mail",
       WITHDRAWAL_TEST_MAIL_URL: "http://127.0.0.1:" + mailbox.address().port,
     },
@@ -113,18 +122,57 @@ test("a browser withdrawal completes via the real POST worker, Auth, Storage and
       assert.ok(attempt < 40, logs);
       await new Promise((resolve) => setTimeout(resolve, 500));
     }
-    async function user() {
+    async function user(id) {
       const email = randomUUID() + "@example.test";
       const password = randomUUID();
-      const created = check(await admin.auth.admin.createUser({ email, password, email_confirm: true })).user;
+      const created = check(await admin.auth.admin.createUser({ id, email, password, email_confirm: true })).user;
+      if (id) assert.equal(created.id, id);
       const database = client(anon);
       const session = check(await database.auth.signInWithPassword({ email, password })).session;
       check(await database.rpc("save_my_profile", { p_display_name: email.split("@")[0] }));
       return { id: created.id, email, password, database, session };
     }
 
-    const [a, b] = await Promise.all([user(), user()]);
+    const [a, b] = await Promise.all([user(pilotTest ? allowed[0] : undefined), user()]);
     const good = (result) => check(result);
+    if (pilotTest) {
+      const headers = (accessToken) => ({ Authorization: "Bearer " + accessToken });
+      const aHeaders = headers(a.session.access_token);
+      const bHeaders = headers(b.session.access_token);
+      const otherJob = randomUUID();
+      sql(`INSERT INTO app_private.account_withdrawals(id,user_id,stage) VALUES ('${otherJob}','${b.id}','auth');
+        INSERT INTO auth.identities (id,user_id,provider_id,provider,identity_data,created_at,updated_at,last_sign_in_at)
+        VALUES (gen_random_uuid(),'${a.id}','fixture-${a.id}','google',
+          jsonb_build_object('sub','fixture-${a.id}','email','${a.email}','email_verified',true),now(),now(),now()); `);
+      const aPasswordPreview = await call({ action: "preview" }, aHeaders);
+      assert.equal(aPasswordPreview.status, 200, aPasswordPreview.data.error);
+      assert.equal(aPasswordPreview.data.method, "password");
+      const [header, payload] = a.session.access_token.split(".");
+      const claims = JSON.parse(Buffer.from(payload, "base64url"));
+      const unsignedOAuth = header + "." + encode({ ...claims, amr: [{ method: "oauth", timestamp: Math.floor(Date.now() / 1000) }] });
+      const oauthHeaders = headers(unsignedOAuth + "." + createHmac("sha256", secret).update(unsignedOAuth).digest("base64url"));
+      assert.equal((await call({ action: "preview" }, oauthHeaders)).data.method, "email");
+      for (const action of ["preview", "code", "begin"]) {
+        assert.equal((await call({ action, groups: [], password: b.password }, bHeaders)).status, 403);
+      }
+      assert.equal((await call({ action: "status", id: otherJob })).status, 404);
+      assert.equal((await call({ action: "worker" }, { "x-withdrawal-worker": worker })).status, 200);
+      assert.equal(sql(`SELECT public.account_withdrawal_status('${otherJob}')`), "pending");
+      assert.equal((await call({ action: "begin", groups: [], password: "incorrect" }, aHeaders)).status, 403);
+      const begun = await call({ action: "begin", groups: [], password: a.password }, aHeaders);
+      assert.equal(begun.status, 202);
+      assert.equal((await call({ action: "status", id: begun.data.id })).data.stage, "pending");
+      assert.equal(sql(`SELECT stage FROM app_private.account_withdrawals WHERE id='${begun.data.id}'`), "storage");
+      for (let step = 0; step < 3; step++) {
+        assert.equal((await call({ action: "worker" }, { "x-withdrawal-worker": worker })).status, 200);
+      }
+      assert.equal((await call({ action: "status", id: begun.data.id })).data.stage, "complete");
+      assert.equal(mail.filter(msg => msg.to === a.email).length, 1);
+      assert.ok((await admin.auth.admin.getUserById(a.id)).error);
+      assert.equal(good(await admin.auth.admin.getUserById(b.id)).user.id, b.id);
+      assert.equal(sql(`SELECT (stage='auth' AND lease_id IS NULL) FROM app_private.account_withdrawals WHERE id='${otherJob}'`), "t");
+      return;
+    }
     const sessionId = (session) => JSON.parse(Buffer.from(session.access_token.split(".")[1], "base64url")).session_id;
     const codeCheck = { p_user: a.id, p_session: sessionId(a.session), p_proof: "isolated-fixture-proof" };
     assert.equal(good(await admin.rpc("issue_withdrawal_email_check", codeCheck)), true);
