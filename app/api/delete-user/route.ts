@@ -58,6 +58,9 @@ export async function POST(request: Request) {
       Array.isArray(claims.amr) && claims.amr.some((method: { method?: string }) => method?.method === "oauth");
     const usePassword = !googleSession && user.identities?.some((identity) => identity.provider === "email") === true;
     const admin = withdrawalClient(true);
+    const activeSession = await admin.rpc("withdrawal_session_is_active", { p_user: user.id, p_session: session });
+    if (activeSession.error) throw new Error("Session lookup failed");
+    if (activeSession.data !== true) return response(401, { error: "ログインし直してください。" });
     if (body.action === "preview") {
       const preview = await admin.rpc("account_withdrawal_preview", { p_user: user.id });
       if (preview.error) throw new Error("Preview failed");

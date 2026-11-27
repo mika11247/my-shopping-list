@@ -68,9 +68,23 @@ REVOKE ALL ON FUNCTION public.issue_withdrawal_email_check(uuid, uuid, text),
 GRANT EXECUTE ON FUNCTION public.issue_withdrawal_email_check(uuid, uuid, text),
   public.consume_withdrawal_email_check(uuid, uuid, text) TO service_role;
 
+-- A restored UUID must not reactivate JWTs from deleted Auth sessions.
+CREATE FUNCTION public.withdrawal_session_is_active(p_user uuid, p_session uuid) RETURNS boolean
+LANGUAGE sql STABLE SECURITY DEFINER SET search_path = '' AS $$
+  SELECT EXISTS (
+    SELECT 1 FROM auth.sessions
+    WHERE id = p_session AND user_id = p_user AND (not_after IS NULL OR not_after > now())
+  );
+$$;
+REVOKE ALL ON FUNCTION public.withdrawal_session_is_active(uuid, uuid) FROM PUBLIC, anon, authenticated;
+GRANT EXECUTE ON FUNCTION public.withdrawal_session_is_active(uuid, uuid) TO service_role;
+
 CREATE OR REPLACE FUNCTION app_private.live_user() RETURNS boolean
 LANGUAGE sql STABLE SECURITY DEFINER SET search_path = '' AS $$
   SELECT EXISTS (SELECT 1 FROM auth.users WHERE id = auth.uid())
+    AND public.withdrawal_session_is_active(auth.uid(), CASE
+      WHEN (auth.jwt()->>'session_id') ~* '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
+        THEN (auth.jwt()->>'session_id')::uuid END)
     AND NOT EXISTS (SELECT 1 FROM app_private.account_withdrawals WHERE user_id = auth.uid());
 $$;
 CREATE OR REPLACE FUNCTION app_private.member_of(g uuid) RETURNS boolean

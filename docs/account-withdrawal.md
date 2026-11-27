@@ -1,5 +1,7 @@
 # 退会機能の検証と本番反映
 
+本番反映の判定条件、保全・復元、4本の適用順序とFirewall切替は [本番反映判定](account-withdrawal-release.md) を参照。
+
 ## 隔離検証
 
 次の操作は、架空データ専用のDockerプロジェクトだけを対象にする。Supabaseのリンク・本番の環境変数・Previewは使わない。AuthとStorageが起動したことを確認してから、新規の隔離DBにfixtureを一度適用する。

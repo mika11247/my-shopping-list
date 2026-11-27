@@ -9,6 +9,10 @@ const base = read("tests/fixtures/security-schema.sql")
 process.stdout.write(`
 CREATE SCHEMA IF NOT EXISTS extensions;
 CREATE SCHEMA IF NOT EXISTS vault;
+CREATE OR REPLACE FUNCTION auth.jwt() RETURNS jsonb
+LANGUAGE sql STABLE AS $$
+  SELECT nullif(current_setting('request.jwt.claims', true), '')::jsonb;
+$$;
 CREATE OR REPLACE FUNCTION auth.uid() RETURNS uuid
 LANGUAGE sql STABLE AS $$
   SELECT coalesce(nullif(current_setting('request.jwt.claim.sub', true), ''),

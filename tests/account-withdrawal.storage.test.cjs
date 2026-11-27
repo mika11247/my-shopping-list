@@ -6,6 +6,7 @@ const { test } = require("node:test");
 const insideDocker = process.argv.includes("--isolated-docker");
 const auth = insideDocker ? "http://auth:9999" : "http://127.0.0.1:35539/auth/v1";
 const storage = insideDocker ? "http://storage:5000" : "http://127.0.0.1:35539/storage/v1";
+const rest = "http://127.0.0.1:35539/rest/v1";
 const bucket = "item-images";
 const secret = "withdrawal-isolated-test-signing-secret";
 const encode = (value) => Buffer.from(JSON.stringify(value)).toString("base64url");
@@ -79,7 +80,8 @@ test("after hard deletion, a recreated isolated Auth UUID can restore original S
     return Buffer.from(await response.arrayBuffer());
   };
   try {
-    await request(storage, `/object/${bucket}/${path}`, "POST", await signIn(password), png, "image/png");
+    const staleToken = await signIn(password);
+    await request(storage, `/object/${bucket}/${path}`, "POST", staleToken, png, "image/png");
     assert.equal(owner(), id);
     const backup = await read();
     await request(storage, `/object/${bucket}/${path}`, "DELETE", admin);
@@ -92,6 +94,17 @@ test("after hard deletion, a recreated isolated Auth UUID can restore original S
     assert.equal(recovered.id, id);
     const recoveredToken = await signIn(recoveredPassword);
     await request(storage, `/object/${bucket}/${path}`, "POST", recoveredToken, backup, "image/png");
+    await request(rest, "/shopping_items", "POST", recoveredToken, { user_id: id, name: "Restored private fixture" });
+    assert.deepEqual(JSON.parse(await request(rest, "/shopping_items?select=id", "GET", staleToken)), []);
+    const staleWrite = await fetch(rest + "/shopping_items", {
+      method: "POST", headers: { Authorization: "Bearer " + staleToken, "Content-Type": "application/json" },
+      body: JSON.stringify({ user_id: id, name: "Must be denied" }),
+    });
+    assert.equal(staleWrite.status, 403);
+    const staleUpload = await fetch(storage + `/object/${bucket}/${id}/must-be-denied.png`, {
+      method: "POST", headers: { Authorization: "Bearer " + staleToken, "Content-Type": "image/png" }, body: png,
+    });
+    assert.ok(!staleUpload.ok);
     assert.equal(owner(), id);
     assert.deepEqual(await read(), png);
     await request(storage, `/object/${bucket}/${path}`, "DELETE", recoveredToken);

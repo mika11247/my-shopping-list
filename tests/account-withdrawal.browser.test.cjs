@@ -1,7 +1,8 @@
 const assert = require("node:assert/strict");
 const { createHmac, randomUUID } = require("node:crypto");
-const { spawn } = require("node:child_process");
+const { execFileSync, spawn } = require("node:child_process");
 const { createServer } = require("node:http");
+const { createInterface } = require("node:readline");
 const { test } = require("node:test");
 const { createClient } = require("@supabase/supabase-js");
 const { chromium } = require(process.env.WITHDRAWAL_PLAYWRIGHT_PATH || "@playwright/test");
@@ -12,6 +13,41 @@ const origin = "http://127.0.0.1:35530";
 const worker = "withdrawal-local-worker-secret-for-tests";
 const secret = "withdrawal-isolated-test-signing-secret";
 const encode = (value) => Buffer.from(JSON.stringify(value)).toString("base64url");
+const project = "shopping-withdrawal-cron";
+const sql = (input) => execFileSync("docker", ["exec", "-i", project + "-db-1",
+  "psql", "-XqAt", "-U", "postgres", "-v", "ON_ERROR_STOP=1"], { input, encoding: "utf8" }).trim();
+
+// The DB network stays internal. This test-only relay accepts the exact worker
+// contract and forwards via stdio to the real Next.js loopback listener.
+function cronRelay(expectedSecret) {
+  const { createServer } = require("node:http");
+  const { createInterface } = require("node:readline");
+  const pending = new Map();
+  let sequence = 0;
+  createInterface({ input: process.stdin }).on("line", (line) => {
+    const { id, status } = JSON.parse(line);
+    pending.get(id)?.writeHead(status).end();
+    pending.delete(id);
+  });
+  createServer(async (request, response) => {
+    try {
+      const chunks = [];
+      for await (const chunk of request) chunks.push(chunk);
+      if (request.method !== "POST" || request.url !== "/api/delete-user" ||
+        request.headers["x-withdrawal-worker"] !== expectedSecret ||
+        JSON.parse(Buffer.concat(chunks)).action !== "worker") {
+        response.writeHead(401).end();
+        return;
+      }
+      const id = ++sequence;
+      pending.set(id, response);
+      response.on("close", () => pending.delete(id));
+      console.log(JSON.stringify({ id }));
+    } catch {
+      response.writeHead(400).end();
+    }
+  }).listen(35540, "0.0.0.0", () => console.log(JSON.stringify({ pid: process.pid })));
+}
 
 function key(role) {
   const payload = encode({ alg: "HS256", typ: "JWT" }) + "." + encode({
@@ -37,7 +73,7 @@ async function call(body, headers = {}) {
   return { status: response.status, data: await response.json() };
 }
 
-test("browser withdrawal preserves shared records and image bytes using real Auth, Storage and DB", { timeout: 150000 }, async () => {
+test("a browser withdrawal completes via Cron, the real Next worker, Auth, Storage and DB", { timeout: 160000 }, async () => {
   const anon = key("anon");
   const service = key("service_role");
   const admin = client(service);
@@ -65,6 +101,10 @@ test("browser withdrawal preserves shared records and image bytes using real Aut
   server.stdout.on("data", (chunk) => { logs += chunk; });
   server.stderr.on("data", (chunk) => { logs += chunk; });
   let browser;
+  let relay;
+  let relayPid;
+  let cronRegistered = false;
+  let cronCalls = 0;
   try {
     for (let attempt = 0; ; attempt++) {
       try {
@@ -165,11 +205,53 @@ test("browser withdrawal preserves shared records and image bytes using real Aut
     assert.equal(good(await admin.rpc("advance_account_withdrawal", {
       p_job: id, p_lease: lease, p_action: "release",
     })), true);
+    relay = spawn("docker", ["exec", "-i", project + "-storage-1", "node", "-e",
+      `(${cronRelay.toString()})(${JSON.stringify(worker)})`], { stdio: ["pipe", "pipe", "ignore"] });
+    const ready = new Promise((resolve) => {
+      createInterface({ input: relay.stdout }).on("line", async (line) => {
+        const event = JSON.parse(line);
+        if (event.pid) {
+          relayPid = String(event.pid);
+          resolve();
+          return;
+        }
+        cronCalls++;
+        const result = await call({ action: "worker" }, { "x-withdrawal-worker": worker })
+          .catch(() => ({ status: 503 }));
+        if (relay.stdin.writable) relay.stdin.write(JSON.stringify({ id: event.id, status: result.status }) + "\n");
+      });
+    });
+    await Promise.race([ready, new Promise((_, reject) => {
+      const timer = setTimeout(() => reject(new Error("Cron relay did not start")), 10000);
+      timer.unref();
+    })]);
+    cronRegistered = true;
+    sql(`SELECT vault.create_secret('${worker}', 'account_withdrawal_worker_secret');
+      SELECT cron.schedule('account-withdrawal-real-worker-test', '5 seconds',
+        $$SELECT app_private.dispatch_account_withdrawal('http://storage:35540/api/delete-user')$$);`);
+    const deadline = Date.now() + 55000;
+    while (!mail.some((message) => message.to === a.email) && Date.now() < deadline) {
+      await new Promise((resolve) => setTimeout(resolve, 500));
+    }
+    assert.equal(sql(`SELECT public.account_withdrawal_status('${id}')`), "complete");
+    assert.ok(cronCalls >= 4);
+    assert.equal(mail.filter((message) => message.to === a.email).length, 1);
+    sql(`SELECT cron.unschedule('account-withdrawal-real-worker-test');
+      DELETE FROM vault.secrets WHERE name = 'account_withdrawal_worker_secret';`);
+    cronRegistered = false;
     allowProgress = true;
     await page.getByText("退会処理が完了しました。", { exact: true }).waitFor({ timeout: 45000 });
     assert.equal((await call({ action: "status", id })).data.stage, "complete");
     assert.equal(mail.filter((message) => message.to === a.email).length, 1);
     assert.ok((await admin.auth.admin.getUserById(a.id)).error);
+    const recreated = await fetch(api + "/auth/v1/admin/users", {
+      method: "POST", headers: { Authorization: "Bearer " + service, "Content-Type": "application/json" },
+      body: JSON.stringify({ id: a.id, email: a.email, password: randomUUID(), email_confirm: true }),
+    });
+    assert.equal(recreated.ok, true);
+    assert.equal((await recreated.json()).id, a.id);
+    assert.equal((await call({ action: "preview" }, tokenHeaders)).status, 401);
+    good(await admin.auth.admin.deleteUser(a.id));
     const history = good(await b.database.from("deleted_items").select("user_id,purchased_by_name").eq("group_id", group.id).single());
     assert.deepEqual(history, { user_id: null, purchased_by_name: "退会済みユーザー" });
     const shared = good(await b.database.from("shopping_items").select("image_url,user_id").eq("group_id", group.id).single());
@@ -204,6 +286,10 @@ test("browser withdrawal preserves shared records and image bytes using real Aut
     console.error(logs);
     throw error;
   } finally {
+    if (cronRegistered) sql(`SELECT cron.unschedule(jobid) FROM cron.job WHERE jobname='account-withdrawal-real-worker-test';
+      DELETE FROM vault.secrets WHERE name='account_withdrawal_worker_secret';`);
+    if (relayPid) execFileSync("docker", ["exec", project + "-storage-1", "kill", relayPid], { stdio: "ignore" });
+    relay?.kill();
     if (browser) await browser.close();
     if (process.platform === "win32" && server.pid) {
       spawn("taskkill", ["/PID", String(server.pid), "/T", "/F"], { windowsHide: true, stdio: "ignore" });
