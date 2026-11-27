@@ -9,10 +9,12 @@
 3. 3営業日以内の完了を運用目安とする。通知に気づかない場合や送信失敗に備え、担当者のカレンダーで週1回、同じ集計を確認する。
 
 ```sql
-select count(*) as pending_jobs, min(created_at) as oldest_request
+select count(*) as pending_jobs
 from app_private.account_withdrawals
 where stage <> 'complete' or email is not null;
 ```
+
+期限は受付通知の受信時刻を目安にする。通知がなく週次確認で見つけたジョブは、その確認時点で優先して処理する。
 
 ## 失敗からの再開
 
