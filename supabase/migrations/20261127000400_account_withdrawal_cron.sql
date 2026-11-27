@@ -22,14 +22,17 @@ BEGIN
     ] LOOP
       IF has_table_privilege(app_role, protected_relation, 'SELECT')
         OR has_any_column_privilege(app_role, protected_relation, 'SELECT') THEN
-        RAISE EXCEPTION 'An application role can read withdrawal scheduler credentials or transport data';
+        RAISE EXCEPTION 'Withdrawal scheduler ACL blocks release: role % can read %',
+          app_role, protected_relation
+          USING HINT = 'Have the managed object owner revoke the app role or PUBLIC grant; retry without weakening this check.';
       END IF;
     END LOOP;
     IF EXISTS (
       SELECT 1 FROM pg_proc WHERE pronamespace = 'net'::regnamespace
         AND has_function_privilege(app_role, oid, 'EXECUTE')
     ) THEN
-      RAISE EXCEPTION 'An application role can execute pg_net functions';
+      RAISE EXCEPTION 'Withdrawal scheduler ACL blocks release: role % can execute pg_net functions', app_role
+        USING HINT = 'Have the managed object owner revoke the app role or PUBLIC grant.';
     END IF;
   END LOOP;
 END;

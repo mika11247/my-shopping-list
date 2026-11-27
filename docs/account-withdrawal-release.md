@@ -19,6 +19,14 @@
 
 ## 4本の適用と段階検証
 
+### Supabase Hosted の pg_net 権限
+
+本番の4本目は、一般ロールからのキュー参照を防ぐ安全チェックで中断した。ロールバック付きの診断により、`net.http_request_queue` と `net._http_response` は `supabase_admin` 所有であり、同ロールから `PUBLIC` に付与された `SELECT` が `anon` と `authenticated` に及ぶことを確認した。実行ロール `postgres` は管理ロールを継承せず、`SET ROLE` もできない。現行Vaultの対象2オブジェクトは両ロールとも参照できない。診断はロールバックされ、本番に `net`／`cron` スキーマは残っていない。
+
+再開には、Supabaseサポートへ管理オブジェクトの所有者による対象限定のACL調整を依頼する。新規の `pg_net` を利用可能にする場合、同一の管理作業で対象キュー表・応答表から `PUBLIC`、`anon`、`authenticated` の権限を除去し、`net` 内の関数への同ロールの実行権限も除去する。通常のDB運用ロールには、ディスパッチに必要な `net` のUSAGE、キュー表のSELECT、`net.http_post` のEXECUTEと、監視に必要な応答表のSELECTを対象限定で維持する。既存の他スキーマ、テーブル所有者、ロール所属、権限の既定値は維持する。対応後に4本目だけを適用し、既存のACL安全チェックを通過した時点で配備に進む。
+
+隔離検証の `tests/account-withdrawal-hosted-acl.sql` は、管理所有者から `PUBLIC` に付与される構成と、非所有の実行ロールから取り消せない条件を再現する。管理所有者による対象ACL変更後に、一般ロールがキュー・Vaultを参照できず、ワーカー運用ロールの必要権限が残ることを確認する。
+
 1. **保全と事前確認。** 上記の保全を管理者が実施する。対象ref・SHA・実行ロール・外部キー・RLS・Storage参照・My Itemsカウンター不一致件数を記録する。OAuth、Resendの実送信キーの範囲、専用Google利用者と受信箱を用意する。専用Google利用者での実配信試験は隔離Supabase・OAuthクライアントで先に行い、送信元・配信イベント・コード受領・別セッションと期限切れの拒否・完了通知を確認する。
 2. **停止状態で適用。** Firewall deny、`ACCOUNT_WITHDRAWAL_INTAKE_DISABLED=true`、APIとUIの機能フラグ停止を維持する。SQLを順にそれぞれのトランザクションで適用する。
    1. `20261127000100_shopping_group_transfer.sql`
