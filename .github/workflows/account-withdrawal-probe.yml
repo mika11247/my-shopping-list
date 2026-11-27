@@ -22,11 +22,6 @@ jobs:
         env:
           WITHDRAWAL_WORKER_SECRET: ${{ secrets.WITHDRAWAL_WORKER_SECRET }}
         run: |
-          if [[ ! "$WITHDRAWAL_WORKER_SECRET" =~ ^[[:xdigit:]]{64}$ ]]; then
-            echo 'Worker credential is missing or invalid.'
-            exit 1
-          fi
-
           check() {
             local label=$1 expected=$2 status
             shift 2
@@ -43,7 +38,13 @@ jobs:
             [[ "$status" == "$expected" ]]
           }
 
+          failed=0
+          check 'Invalid credential' 401 --header 'x-withdrawal-worker: invalid-probe' || failed=1
+          check 'Missing credential' 401 || failed=1
+          if [[ -z "$WITHDRAWAL_WORKER_SECRET" || "$WITHDRAWAL_WORKER_SECRET" == *$'\r'* || "$WITHDRAWAL_WORKER_SECRET" == *$'\n'* ]]; then
+            echo 'Worker credential is unavailable or cannot be sent as a header.'
+            exit 1
+          fi
           printf 'x-withdrawal-worker: %s\n' "$WITHDRAWAL_WORKER_SECRET" |
-            check 'Valid credential' 200 --header @-
-          check 'Invalid credential' 401 --header 'x-withdrawal-worker: invalid-probe'
-          check 'Missing credential' 401
+            check 'Configured credential' 200 --header @- || failed=1
+          exit "$failed"
